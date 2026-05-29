@@ -281,7 +281,7 @@
       <a id="btnVerRota1" class="btn-ver-rota" href="#" target="_blank" style="display:none">
         🗺️ Traçar rota no Maps → ver distância
       </a>
-      <p class="hint" style="margin-top:6px">Insira a distância de ida (apenas um sentido).</p>
+      <p class="hint" id="distHintTxt" style="margin-top:6px">Insira a distância de ida (apenas um sentido).</p>
     </div>
   </div>
 
@@ -499,20 +499,17 @@
     document.getElementById('distManualWrap').style.display = 'block';
     document.getElementById('rotasContainer').style.display = 'none';
     const btn = document.getElementById('btnVerRota1');
-    if (origemStr) {
-      const [oLat, oLng] = origemStr.split(',').map(Number);
-      let destParam = '';
-      if (dest) {
-        destParam = `${dest.lat},${dest.lng}`;
-      } else {
-        // Usa o link curto diretamente como destino
-        const linkCurto = document.getElementById('destLink').value.trim();
-        destParam = encodeURIComponent(linkCurto);
-      }
-      btn.href = `https://www.google.com/maps/dir/${oLat},${oLng}/${destParam}`;
+    if (dest) {
+      // Tem coordenadas: abre rota completa
+      btn.href = montarLinkMaps(origemStr, dest);
+      btn.innerHTML = '🗺️ Traçar rota no Maps → ver distância';
       btn.style.display = 'flex';
     } else {
-      btn.style.display = 'none';
+      // Link curto: abre só o destino, usuário traça de lá
+      const linkCurto = document.getElementById('destLink').value.trim();
+      btn.href = linkCurto;
+      btn.innerHTML = '📍 Abrir destino no Maps';
+      btn.style.display = 'flex';
     }
   }
 
