@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Orçamento de Frete</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      padding: 20px 16px 16px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p { font-size: 0.8rem; opacity: 0.7; margin-top: 2px; }
+
+    .container { padding: 12px; max-width: 600px; margin: 0 auto; }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .card-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #888;
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 5px;
+    }
+
+    select, input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: #fafafa;
+      color: #1a1a2e;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    select:focus, input:focus { border-color: #4361ee; background: white; }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none; color: #888; font-size: 1rem;
+    }
+
+    .dest-input-wrap { position: relative; }
+    .dest-input-wrap input { padding-right: 44px; }
+    .clear-btn {
+      position: absolute; right: 10px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      font-size: 1.2rem; color: #aaa; cursor: pointer;
+      padding: 4px 6px; line-height: 1;
+    }
+
+    .hint { font-size: 0.75rem; color: #999; margin-top: 5px; line-height: 1.4; }
+
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-radius: 10px;
+      font-size: 0.82rem; font-weight: 500; margin-top: 10px;
+    }
+    .status-bar.loading { background: #fff3cd; color: #856404; }
+    .status-bar.success { background: #d1fae5; color: #065f46; }
+    .status-bar.error   { background: #fee2e2; color: #991b1b; }
+    .status-bar.info    { background: #e0e7ff; color: #3730a3; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid currentColor; border-top-color: transparent;
+      border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Seleção de rotas */
+    .rotas-container { margin-top: 12px; }
+    .rotas-title { font-size: 0.78rem; font-weight: 700; color: #444; margin-bottom: 8px; }
+
+    .rota-opcao {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: 10px; margin-bottom: 6px;
+      border: 2px solid #e0e0e0; cursor: pointer;
+      transition: all 0.15s; background: #fafafa;
+    }
+    .rota-opcao:active { transform: scale(0.98); }
+    .rota-opcao.selecionada { border-color: #4361ee; background: #eff3ff; }
+    .rota-opcao input[type="radio"] { display: none; }
+
+    .rota-radio {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid #ccc; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .rota-opcao.selecionada .rota-radio {
+      border-color: #4361ee; background: #4361ee;
+    }
+    .rota-opcao.selecionada .rota-radio::after {
+      content: ''; width: 7px; height: 7px;
+      border-radius: 50%; background: white;
+    }
+
+    .rota-info { flex: 1; }
+    .rota-dist { font-size: 1rem; font-weight: 700; color: #1a1a2e; }
+    .rota-dur  { font-size: 0.75rem; color: #888; margin-top: 1px; }
+    .rota-label {
+      font-size: 0.7rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .rota-label.mais-rapida { background: #d1fae5; color: #065f46; }
+    .rota-label.mais-curta  { background: #dbeafe; color: #1e40af; }
+    .rota-label.alternativa { background: #f3f4f6; color: #6b7280; }
+
+    .btn-ver-rota {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 14px; border-radius: 10px;
+      background: #f0f7f0; color: #166534; border: 1.5px solid #bbf7d0;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-top: 10px;
+      text-decoration: none; transition: all 0.15s;
+    }
+    .btn-ver-rota:active { transform: scale(0.97); }
+
+    /* Distância manual */
+    .dist-row { display: flex; gap: 8px; align-items: flex-end; margin-top: 10px; }
+    .dist-row .field { flex: 1; }
+    .dist-row label { margin-bottom: 5px; }
+
+    /* Parâmetros */
+    .accordion-header {
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; user-select: none;
+    }
+    .accordion-header .chevron { font-size: 1rem; color: #888; transition: transform 0.2s; }
+    .accordion-header.open .chevron { transform: rotate(180deg); }
+    .accordion-body { display: none; margin-top: 12px; }
+    .accordion-body.open { display: block; }
+
+    .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .param-field label { font-size: 0.78rem; margin-bottom: 4px; }
+    .param-field input  { font-size: 0.88rem; padding: 10px 12px; }
+
+    /* Botão calcular */
+    .btn-calcular {
+      display: block; width: 100%; padding: 15px;
+      background: #4361ee; color: white; border: none;
+      border-radius: 12px; font-size: 1rem; font-weight: 700;
+      cursor: pointer; margin-top: 4px; transition: all 0.15s;
+    }
+    .btn-calcular:active { transform: scale(0.98); }
+    .btn-calcular:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* Resultados */
+    .results-hidden { display: none; }
+
+    .result-card {
+      border-radius: 14px; padding: 15px;
+      margin-bottom: 10px; border: 1.5px solid transparent;
+    }
+    .result-card.tipo-1 { background: #eff6ff; border-color: #bfdbfe; }
+    .result-card.tipo-2 { background: #fdf4ff; border-color: #e9d5ff; }
+    .result-card.tipo-3 { background: #f0fdf4; border-color: #bbf7d0; }
+    .result-card.tipo-4 { background: #fffbeb; border-color: #fde68a; }
+
+    .result-header {
+      display: flex; justify-content: space-between;
+      align-items: baseline; margin-bottom: 10px;
+    }
+    .result-title { font-size: 0.82rem; font-weight: 700; color: #555; }
+    .result-total { font-size: 1.5rem; font-weight: 800; color: #1a1a2e; }
+    .result-total small { font-size: 0.85rem; font-weight: 600; color: #888; }
+
+    .result-rows { border-top: 1px solid rgba(0,0,0,0.07); padding-top: 8px; }
+    .result-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.8rem; color: #666; padding: 2px 0;
+    }
+    .result-row .val { font-weight: 500; }
+    .result-meta { font-size: 0.73rem; color: #999; margin-top: 6px; }
+
+    .dist-badge {
+      display: inline-block; background: #e0e7ff; color: #3730a3;
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 0.78rem; font-weight: 700; margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🚛 Orçamento de Frete</h1>
+  <p>Selecione a origem, cole o destino e calcule</p>
+</header>
+
+<div class="container">
+
+  <!-- ORIGEM -->
+  <div class="card">
+    <div class="card-title">📍 Origem</div>
+    <label for="origem">Jazida / Saibreira</label>
+    <div class="select-wrap">
+      <select id="origem">
+        <option value="">— Selecione a origem —</option>
+        <optgroup label="Nossas Jazidas">
+          <option value="-29.828008,-50.597901">Saibreira Palmeira</option>
+          <option value="-29.797370,-50.581143">Saibreira Solo</option>
+          <option value="-29.776167,-50.596813">Saibreira Serraria</option>
+          <option value="-29.746594,-50.577166">Pedreira 474</option>
+        </optgroup>
+        <optgroup label="Materiais de Terceiros">
+          <option value="-29.735916,-50.501877">Cascalheira do Clésio</option>
+          <option value="-29.928121,-50.510653">Cascalheira Gallon</option>
+          <option value="-29.922899,-50.461886">Rost Martins</option>
+          <option value="-29.948550,-50.494830">Jazida Eckert</option>
+          <option value="-29.837626,-50.556412">São Joaquim</option>
+        </optgroup>
+      </select>
+    </div>
+  </div>
+
+  <!-- DESTINO -->
+  <div class="card">
+    <div class="card-title">🎯 Destino</div>
+    <label for="destLink">Link do Google Maps</label>
+    <div class="dest-input-wrap">
+      <input type="text" id="destLink"
+        placeholder="Cole o link do WhatsApp aqui..."
+        autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="clear-btn" id="clearLink" onclick="clearDestino()" style="display:none">✕</button>
+    </div>
+    <p class="hint">Cole qualquer link do Maps (google.com/maps, maps.app.goo.gl…)</p>
+
+    <div id="statusBar" style="display:none"></div>
+
+    <!-- Seleção de rotas (aparece quando OSRM retorna opções) -->
+    <div id="rotasContainer" class="rotas-container" style="display:none">
+      <div class="rotas-title">🛣️ Escolha a rota a usar:</div>
+      <div id="rotasLista"></div>
+      <a id="btnVerRotas" class="btn-ver-rota" href="#" target="_blank">
+        🗺️ Ver todas as rotas no Maps
+      </a>
+    </div>
+
+    <!-- Distância manual (fallback) -->
+    <div id="distManualWrap" style="display:none">
+      <div class="dist-row">
+        <div class="field">
+          <label for="distManual">Distância de ida (km)</label>
+          <input type="number" id="distManual" placeholder="ex: 45" min="0" step="0.1">
+        </div>
+      </div>
+      <a id="btnVerRota1" class="btn-ver-rota" href="#" target="_blank" style="display:none">
+        🗺️ Abrir rota no Maps para conferir
+      </a>
+      <p class="hint" style="margin-top:6px">Insira a distância de ida (apenas um sentido).</p>
+    </div>
+  </div>
+
+  <!-- PARÂMETROS -->
+  <div class="card">
+    <div class="accordion-header" id="paramHeader" onclick="toggleParams()">
+      <div class="card-title" style="margin:0">⚙️ Parâmetros</div>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="accordion-body" id="paramBody">
+      <div class="param-grid">
+        <div class="param-field">
+          <label for="pDiesel">Preço Diesel (R$/L)</label>
+          <input type="number" id="pDiesel" value="6.00" step="0.01" min="0">
+        </div>
+        <div class="param-field">
+          <label for="pPedagio">Pedágio (R$)</label>
+          <input type="number" id="pPedagio" value="2.75" step="0.01" min="0">
+        </div>
+        <div class="param-field">
+          <label for="pValorKm">Valor Km (R$)</label>
+          <input type="number" id="pValorKm" value="25.20" step="0.01" min="0">
+        </div>
+        <div class="param-field">
+          <label for="pArrancada">Arrancada (R$)</label>
+          <input type="number" id="pArrancada" value="2.60" step="0.01" min="0">
+        </div>
+        <div class="param-field">
+          <label for="pMaterial">Material (R$)</label>
+          <input type="number" id="pMaterial" value="0" step="0.01" min="0">
+        </div>
+        <div class="param-field">
+          <label for="pNF">NF (R$)</label>
+          <input type="number" id="pNF" value="0" step="0.01" min="0">
+        </div>
+        <div class="param-field">
+          <label for="pFreteNFPrancha">Frete NF Prancha (R$)</label>
+          <input type="number" id="pFreteNFPrancha" value="700" step="1" min="0">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÃO CALCULAR -->
+  <button class="btn-calcular" id="btnCalcular" onclick="calcular()" disabled>
+    Calcular Orçamentos
+  </button>
+
+  <!-- RESULTADOS -->
+  <div id="resultados" class="results-hidden">
+    <div style="margin-top:16px; margin-bottom:8px;">
+      <div class="card-title" style="text-align:center; margin-bottom:0">📊 ORÇAMENTOS</div>
+    </div>
+    <div><span class="dist-badge" id="distBadge"></span></div>
+
+    <div class="result-card tipo-1">
+      <div class="result-header">
+        <div class="result-title">CAMINHÃO 2,5 km/L</div>
+        <div class="result-total" id="total1"></div>
+      </div>
+      <div class="result-rows" id="rows1"></div>
+    </div>
+
+    <div class="result-card tipo-2">
+      <div class="result-header">
+        <div class="result-title">PRANCHA (1,25 km/L)</div>
+        <div class="result-total" id="total2"></div>
+      </div>
+      <div class="result-rows" id="rows2"></div>
+    </div>
+
+    <div class="result-card tipo-3">
+      <div class="result-header">
+        <div class="result-title">TRECHOS &gt; 50km (3 km/L)</div>
+        <div class="result-total" id="total3"></div>
+      </div>
+      <div class="result-rows" id="rows3"></div>
+    </div>
+
+    <div class="result-card tipo-4">
+      <div class="result-header">
+        <div class="result-title">CAMINHÃO 3 km/L</div>
+        <div class="result-total" id="total4"></div>
+      </div>
+      <div class="result-rows" id="rows4"></div>
+    </div>
+  </div>
+
+  <div style="height:24px"></div>
+</div>
+
+<script>
+  let destCoords = null;
+  let rotaSelecionadaKm = null;
+
+  const jazidas = {
+    '-29.828008,-50.597901': 'Saibreira Palmeira',
+    '-29.797370,-50.581143': 'Saibreira Solo',
+    '-29.776167,-50.596813': 'Saibreira Serraria',
+    '-29.746594,-50.577166': 'Pedreira 474',
+    '-29.735916,-50.501877': 'Cascalheira do Clésio',
+    '-29.928121,-50.510653': 'Cascalheira Gallon',
+    '-29.922899,-50.461886': 'Rost Martins',
+    '-29.948550,-50.494830': 'Jazida Eckert',
+    '-29.837626,-50.556412': 'São Joaquim',
+  };
+
+  const R = v => 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+  function fmtDur(segundos) {
+    const h = Math.floor(segundos / 3600);
+    const m = Math.round((segundos % 3600) / 60);
+    if (h > 0) return `${h}h ${m}min`;
+    return `${m} min`;
+  }
+
+  function extrairCoordenadas(url) {
+    const padroes = [
+      /[?&]q=(-?\d+\.\d+),\s*(-?\d+\.\d+)/,
+      /search\/(-?\d+\.\d+),\s*[+-]?(\d+\.\d+)/,
+      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+      /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+      /\/(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    ];
+    for (const p of padroes) {
+      const m = url.match(p);
+      if (m) {
+        const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+      }
+    }
+    return null;
+  }
+
+  function isUrlCurta(url) {
+    return /maps\.app\.goo\.gl|goo\.gl\/maps/.test(url);
+  }
+
+  function showStatus(tipo, msg) {
+    const bar = document.getElementById('statusBar');
+    bar.style.display = 'flex';
+    bar.className = 'status-bar ' + tipo;
+    bar.innerHTML = (tipo === 'loading' ? '<div class="spinner"></div>' : '') + `<span>${msg}</span>`;
+  }
+
+  function hideStatus() { document.getElementById('statusBar').style.display = 'none'; }
+
+  // Busca rotas via OSRM (até 3 alternativas)
+  async function buscarRotasOSRM(origemStr, dest) {
+    const [oLat, oLng] = origemStr.split(',').map(Number);
+    const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dest.lng},${dest.lat}?overview=false&alternatives=true`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Erro na API');
+    const data = await resp.json();
+    if (data.code !== 'Ok' || !data.routes.length) throw new Error('Sem rota');
+    return data.routes.map(r => ({
+      distKm: r.distance / 1000,
+      durSeg: r.duration,
+    }));
+  }
+
+  function montarLinkMaps(origemStr, dest) {
+    const [oLat, oLng] = origemStr.split(',').map(Number);
+    return `https://www.google.com/maps/dir/${oLat},${oLng}/${dest.lat},${dest.lng}`;
+  }
+
+  function renderRotas(rotas, origemStr, dest) {
+    const container = document.getElementById('rotasContainer');
+    const lista = document.getElementById('rotasLista');
+    const btnVer = document.getElementById('btnVerRotas');
+
+    // Ordena por distância para identificar a mais curta
+    const distancias = rotas.map(r => r.distKm);
+    const menorDist = Math.min(...distancias);
+    const menorDur  = Math.min(...rotas.map(r => r.durSeg));
+
+    lista.innerHTML = rotas.map((r, i) => {
+      let labelTxt = '', labelClass = 'alternativa';
+      if (r.durSeg === menorDur && rotas.length > 1) { labelTxt = 'Mais rápida'; labelClass = 'mais-rapida'; }
+      else if (r.distKm === menorDist && rotas.length > 1) { labelTxt = 'Mais curta'; labelClass = 'mais-curta'; }
+      else if (rotas.length === 1) { labelTxt = 'Única rota'; labelClass = 'mais-rapida'; }
+      else { labelTxt = `Alternativa ${i}`; }
+
+      const sel = i === 0 ? 'selecionada' : '';
+      return `
+        <label class="rota-opcao ${sel}" id="rota-label-${i}" onclick="selecionarRota(${i}, ${r.distKm.toFixed(1)})">
+          <input type="radio" name="rota" value="${i}" ${i===0?'checked':''}>
+          <div class="rota-radio"></div>
+          <div class="rota-info">
+            <div class="rota-dist">${r.distKm.toFixed(1)} km de ida</div>
+            <div class="rota-dur">Aprox. ${fmtDur(r.durSeg)} • ida e volta: ${(r.distKm*2).toFixed(1)} km</div>
+          </div>
+          <span class="rota-label ${labelClass}">${labelTxt}</span>
+        </label>`;
+    }).join('');
+
+    // Seleciona a primeira por padrão
+    rotaSelecionadaKm = rotas[0].distKm;
+
+    btnVer.href = montarLinkMaps(origemStr, dest);
+    container.style.display = 'block';
+    document.getElementById('distManualWrap').style.display = 'none';
+    atualizarBotaoCalcular();
+  }
+
+  function selecionarRota(idx, distKm) {
+    rotaSelecionadaKm = distKm;
+    document.querySelectorAll('.rota-opcao').forEach((el, i) => {
+      el.classList.toggle('selecionada', i === idx);
+    });
+    atualizarBotaoCalcular();
+  }
+
+  function mostrarFallbackManual(origemStr, dest) {
+    document.getElementById('distManualWrap').style.display = 'block';
+    document.getElementById('rotasContainer').style.display = 'none';
+    if (origemStr && dest) {
+      const btn = document.getElementById('btnVerRota1');
+      btn.href = montarLinkMaps(origemStr, dest);
+      btn.style.display = 'flex';
+    }
+  }
+
+  async function processarLink(url) {
+    const origemVal = document.getElementById('origem').value;
+
+    if (!url.trim()) {
+      destCoords = null; rotaSelecionadaKm = null;
+      hideStatus();
+      document.getElementById('rotasContainer').style.display = 'none';
+      document.getElementById('distManualWrap').style.display = 'none';
+      document.getElementById('resultados').className = 'results-hidden';
+      atualizarBotaoCalcular();
+      return;
+    }
+
+    document.getElementById('clearLink').style.display = 'block';
+
+    const coords = extrairCoordenadas(url);
+
+    if (coords) {
+      destCoords = coords;
+      if (origemVal) {
+        showStatus('loading', 'Buscando rotas disponíveis…');
+        try {
+          const rotas = await buscarRotasOSRM(origemVal, coords);
+          hideStatus();
+          if (rotas.length > 1) {
+            showStatus('success', `✅ ${rotas.length} rotas encontradas — escolha a melhor:`);
+          } else {
+            showStatus('success', '✅ Rota encontrada:');
+          }
+          renderRotas(rotas, origemVal, coords);
+        } catch (e) {
+          showStatus('error', '⚠️ Não foi possível calcular automaticamente. Insira a distância manualmente.');
+          mostrarFallbackManual(origemVal, coords);
+        }
+      } else {
+        showStatus('info', '📍 Destino identificado. Selecione a jazida de origem para calcular as rotas.');
+      }
+    } else if (isUrlCurta(url)) {
+      showStatus('info', '🔗 Link curto detectado — não consigo extrair as coordenadas automaticamente.');
+      destCoords = null;
+      mostrarFallbackManual(origemVal, null);
+    } else {
+      showStatus('error', '⚠️ Não consegui identificar o local. Insira a distância manualmente.');
+      destCoords = null;
+      mostrarFallbackManual(origemVal, null);
+    }
+
+    atualizarBotaoCalcular();
+  }
+
+  function clearDestino() {
+    document.getElementById('destLink').value = '';
+    document.getElementById('clearLink').style.display = 'none';
+    document.getElementById('distManual').value = '';
+    destCoords = null; rotaSelecionadaKm = null;
+    hideStatus();
+    document.getElementById('rotasContainer').style.display = 'none';
+    document.getElementById('distManualWrap').style.display = 'none';
+    document.getElementById('resultados').className = 'results-hidden';
+    atualizarBotaoCalcular();
+  }
+
+  function atualizarBotaoCalcular() {
+    const origem = document.getElementById('origem').value;
+    const distManual = parseFloat(document.getElementById('distManual').value);
+    const temDist = (rotaSelecionadaKm != null) || (distManual > 0);
+    document.getElementById('btnCalcular').disabled = !(origem && temDist);
+  }
+
+  function toggleParams() {
+    document.getElementById('paramHeader').classList.toggle('open');
+    document.getElementById('paramBody').classList.toggle('open');
+  }
+
+  function linha(label, valor) {
+    return `<div class="result-row"><span>${label}</span><span class="val">${R(valor)}</span></div>`;
+  }
+
+  function calcular() {
+    const distManual = parseFloat(document.getElementById('distManual').value);
+    const dist = rotaSelecionadaKm != null ? rotaSelecionadaKm : distManual;
+    if (!dist || dist <= 0) { alert('Selecione uma rota ou insira a distância.'); return; }
+
+    const origemVal = document.getElementById('origem').value;
+    if (!origemVal) { alert('Selecione a origem.'); return; }
+
+    const diesel        = parseFloat(document.getElementById('pDiesel').value)       || 6;
+    const pedagio       = parseFloat(document.getElementById('pPedagio').value)      || 0;
+    const valorKm       = parseFloat(document.getElementById('pValorKm').value)      || 0;
+    const arrancada     = parseFloat(document.getElementById('pArrancada').value)    || 0;
+    const material      = parseFloat(document.getElementById('pMaterial').value)     || 0;
+    const nf            = parseFloat(document.getElementById('pNF').value)           || 0;
+    const freteNFPrancha= parseFloat(document.getElementById('pFreteNFPrancha').value)|| 700;
+
+    // Tipo 1 — 2,5 km/L
+    const cd1   = ((dist*2)/2.5)*diesel;
+    const f50_1 = ((cd1*100)/50)/12;
+    const fNF1  = f50_1*1.12;
+    const com1  = f50_1 + pedagio + valorKm + material + nf;
+    const tot1  = com1*12;
+    const carga1= (tot1 - valorKm*12)/(dist*2);
+    document.getElementById('total1').innerHTML = R(tot1)+'<small> /mês</small>';
+    document.getElementById('rows1').innerHTML =
+      linha('Custo Diesel (ida+volta)', cd1) +
+      linha('Frete a 50%', f50_1) +
+      linha('Frete com NF', fNF1) +
+      linha('Pedágio', pedagio) +
+      linha('Valor Km rodado', valorKm) +
+      (material>0?linha('Material',material):'') +
+      (nf>0?linha('NF',nf):'') +
+      `<div class="result-meta">Total da carga: ${R(carga1)}/km</div>`;
+
+    // Tipo 2 — Prancha 1,25 km/L
+    const cd2  = ((dist*2)/1.25)*diesel;
+    const f50_2= (cd2*100)/50;
+    const tot2 = f50_2 + freteNFPrancha + pedagio + material;
+    document.getElementById('total2').innerHTML = R(tot2);
+    document.getElementById('rows2').innerHTML =
+      linha('Custo Diesel (ida+volta)', cd2) +
+      linha('Frete a 50%', f50_2) +
+      linha('Frete com NF (fixo)', freteNFPrancha) +
+      (pedagio>0?linha('Pedágio',pedagio):'') +
+      (material>0?linha('Material',material):'');
+
+    // Tipo 3 — >50km, 3 km/L
+    const cd3  = ((dist*2)/3)*diesel;
+    const f50_3= ((cd3*100)/50)/12;
+    const com3 = f50_3 + arrancada + material;
+    const tot3 = com3*12;
+    document.getElementById('total3').innerHTML = R(tot3)+'<small> /mês</small>';
+    document.getElementById('rows3').innerHTML =
+      linha('Custo Diesel (ida+volta)', cd3) +
+      linha('Frete a 50%', f50_3) +
+      linha('Arrancada', arrancada) +
+      (material>0?linha('Material',material):'');
+
+    // Tipo 4 — 3 km/L
+    const cd4  = ((dist*2)/3)*diesel;
+    const f50_4= ((cd4*100)/50)/12;
+    const com4 = f50_4 + pedagio + valorKm + material + nf;
+    const tot4 = com4*12;
+    document.getElementById('total4').innerHTML = R(tot4)+'<small> /mês</small>';
+    document.getElementById('rows4').innerHTML =
+      linha('Custo Diesel (ida+volta)', cd4) +
+      linha('Frete a 50%', f50_4) +
+      linha('Pedágio', pedagio) +
+      linha('Valor Km rodado', valorKm) +
+      (material>0?linha('Material',material):'') +
+      (nf>0?linha('NF',nf):'');
+
+    const origemNome = jazidas[origemVal] || 'Origem';
+    document.getElementById('distBadge').textContent = `${origemNome} → ${dist.toFixed(1)} km (ida)`;
+    document.getElementById('resultados').className = '';
+    document.getElementById('resultados').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  // Eventos
+  let linkTimer = null;
+  document.getElementById('destLink').addEventListener('input', function () {
+    const val = this.value.trim();
+    document.getElementById('clearLink').style.display = val ? 'block' : 'none';
+    clearTimeout(linkTimer);
+    if (val.length > 8) {
+      linkTimer = setTimeout(() => processarLink(val), 300);
+    } else {
+      destCoords = null; hideStatus();
+      document.getElementById('rotasContainer').style.display = 'none';
+      document.getElementById('distManualWrap').style.display = 'none';
+    }
+    atualizarBotaoCalcular();
+  });
+
+  document.getElementById('destLink').addEventListener('paste', function () {
+    setTimeout(() => { const v = this.value.trim(); if (v) processarLink(v); }, 80);
+  });
+
+  document.getElementById('origem').addEventListener('change', function () {
+    const link = document.getElementById('destLink').value.trim();
+    rotaSelecionadaKm = null;
+    document.getElementById('rotasContainer').style.display = 'none';
+    document.getElementById('distManualWrap').style.display = 'none';
+    hideStatus();
+    if (link) processarLink(link);
+    atualizarBotaoCalcular();
+  });
+
+  document.getElementById('distManual').addEventListener('input', atualizarBotaoCalcular);
+</script>
+
+</body>
+</html>
