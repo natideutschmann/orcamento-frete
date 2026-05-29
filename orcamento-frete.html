@@ -279,7 +279,7 @@
         </div>
       </div>
       <a id="btnVerRota1" class="btn-ver-rota" href="#" target="_blank" style="display:none">
-        🗺️ Abrir rota no Maps para conferir
+        🗺️ Traçar rota no Maps → ver distância
       </a>
       <p class="hint" style="margin-top:6px">Insira a distância de ida (apenas um sentido).</p>
     </div>
@@ -498,10 +498,21 @@
   function mostrarFallbackManual(origemStr, dest) {
     document.getElementById('distManualWrap').style.display = 'block';
     document.getElementById('rotasContainer').style.display = 'none';
-    if (origemStr && dest) {
-      const btn = document.getElementById('btnVerRota1');
-      btn.href = montarLinkMaps(origemStr, dest);
+    const btn = document.getElementById('btnVerRota1');
+    if (origemStr) {
+      const [oLat, oLng] = origemStr.split(',').map(Number);
+      let destParam = '';
+      if (dest) {
+        destParam = `${dest.lat},${dest.lng}`;
+      } else {
+        // Usa o link curto diretamente como destino
+        const linkCurto = document.getElementById('destLink').value.trim();
+        destParam = encodeURIComponent(linkCurto);
+      }
+      btn.href = `https://www.google.com/maps/dir/${oLat},${oLng}/${destParam}`;
       btn.style.display = 'flex';
+    } else {
+      btn.style.display = 'none';
     }
   }
 
@@ -543,7 +554,7 @@
         showStatus('info', '📍 Destino identificado. Selecione a jazida de origem para calcular as rotas.');
       }
     } else if (isUrlCurta(url)) {
-      showStatus('info', '🔗 Link curto detectado — não consigo extrair as coordenadas automaticamente.');
+      showStatus('info', '🔗 Link curto — toque em "Traçar rota no Maps", veja a distância e insira abaixo.');
       destCoords = null;
       mostrarFallbackManual(origemVal, null);
     } else {
