@@ -464,7 +464,7 @@
 
   function montarLinkMaps(origemStr, dest) {
     const [oLat, oLng] = origemStr.split(',').map(Number);
-    return `https://www.google.com/maps/dir/${oLat},${oLng}/${dest.lat},${dest.lng}`;
+    return `https://maps.google.com/maps?saddr=${oLat},${oLng}&daddr=${dest.lat},${dest.lng}`;
   }
 
   function renderRotas(rotas, origemStr, dest) {
