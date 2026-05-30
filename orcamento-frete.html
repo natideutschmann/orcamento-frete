@@ -431,37 +431,17 @@
 
   function hideStatus() { document.getElementById('statusBar').style.display = 'none'; }
 
-  // Resolve link curto via proxy e extrai coordenadas
+  // Resolve link curto via função Vercel e extrai coordenadas
   async function resolverLinkCurto(shortUrl) {
     try {
-      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(shortUrl)}`;
-      const resp = await fetch(proxy, { signal: AbortSignal.timeout(10000) });
+      const apiUrl = `/api/resolve?url=${encodeURIComponent(shortUrl)}`;
+      const resp = await fetch(apiUrl, { signal: AbortSignal.timeout(10000) });
       const data = await resp.json();
-
-      // Tenta extrair da URL final (após redirecionamentos)
-      const finalUrl = data?.status?.url || '';
+      const finalUrl = data?.url || '';
       if (finalUrl) {
         const c = extrairCoordenadas(finalUrl);
         if (c) return c;
       }
-
-      // Tenta extrair do HTML retornado
-      const html = data?.contents || '';
-
-      // Padrão canonical
-      const mCanon = html.match(/canonical[^>]+href="([^"]+)"/);
-      if (mCanon) {
-        const c = extrairCoordenadas(mCanon[1]);
-        if (c) return c;
-      }
-
-      // Coordenadas cruas no HTML (ex: ",-29.828008,-50.597901")
-      const mCoord = html.match(/(-2[0-9]\.\d{4,}),\s*[+]?(-5[0-9]\.\d{4,})/);
-      if (mCoord) {
-        const lat = parseFloat(mCoord[1]), lng = parseFloat(mCoord[2].replace('+',''));
-        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-      }
-
       return null;
     } catch {
       return null;
@@ -596,7 +576,7 @@
         showStatus('info', '📍 Destino identificado. Selecione a jazida de origem para calcular as rotas.');
       }
     } else {
-      showStatus('error', '⚠️ Não consegui identificar o local. Insira a distância manualmente.');
+      showStatus('info', '🔗 Cole a distância de ida abaixo — use o botão para ver a rota no Maps.');
       destCoords = null;
       mostrarFallbackManual(origemVal, null);
     }
