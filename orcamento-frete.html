@@ -429,6 +429,25 @@
 
   function hideStatus() { document.getElementById('statusBar').style.display = 'none'; }
 
+  // Resolve link curto via proxy e extrai coordenadas
+  async function resolverLinkCurto(shortUrl) {
+    try {
+      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(shortUrl)}`;
+      const resp = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+      const data = await resp.json();
+      const finalUrl = data?.status?.url || '';
+      const coords = extrairCoordenadas(finalUrl);
+      if (coords) return coords;
+      // Tenta extrair do HTML retornado também
+      const html = data?.contents || '';
+      const mMatch = html.match(/canonical[^>]+href="([^"]+maps[^"]+)"/);
+      if (mMatch) return extrairCoordenadas(mMatch[1]);
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
   // Busca rotas via OSRM (até 3 alternativas)
   async function buscarRotasOSRM(origemStr, dest) {
     const [oLat, oLng] = origemStr.split(',').map(Number);
@@ -528,7 +547,13 @@
 
     document.getElementById('clearLink').style.display = 'block';
 
-    const coords = extrairCoordenadas(url);
+    let coords = extrairCoordenadas(url);
+
+    // Link curto: tenta resolver via proxy para extrair coordenadas
+    if (!coords && isUrlCurta(url)) {
+      showStatus('loading', 'Resolvendo link curto…');
+      coords = await resolverLinkCurto(url);
+    }
 
     if (coords) {
       destCoords = coords;
@@ -550,10 +575,6 @@
       } else {
         showStatus('info', '📍 Destino identificado. Selecione a jazida de origem para calcular as rotas.');
       }
-    } else if (isUrlCurta(url)) {
-      showStatus('info', '🔗 Link curto — toque em "Traçar rota no Maps", veja a distância e insira abaixo.');
-      destCoords = null;
-      mostrarFallbackManual(origemVal, null);
     } else {
       showStatus('error', '⚠️ Não consegui identificar o local. Insira a distância manualmente.');
       destCoords = null;
