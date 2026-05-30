@@ -399,15 +399,17 @@
   }
 
   function extrairCoordenadas(url) {
+    // Normaliza: remove o + antes de números negativos (ex: "+-50.59" → "-50.59")
+    const u = url.replace(/\+(-\d)/g, '$1');
     const padroes = [
       /[?&]q=(-?\d+\.\d+),\s*(-?\d+\.\d+)/,
-      /search\/(-?\d+\.\d+),\s*[+-]?(\d+\.\d+)/,
+      /search\/(-?\d+\.\d+),\s*(-?\d+\.\d+)/,
       /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
       /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-      /\/(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+      /\/(-?\d{1,3}\.\d{4,}),(-?\d{1,3}\.\d{4,})/,
     ];
     for (const p of padroes) {
-      const m = url.match(p);
+      const m = u.match(p);
       if (m) {
         const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
         if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
@@ -433,15 +435,33 @@
   async function resolverLinkCurto(shortUrl) {
     try {
       const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(shortUrl)}`;
-      const resp = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+      const resp = await fetch(proxy, { signal: AbortSignal.timeout(10000) });
       const data = await resp.json();
+
+      // Tenta extrair da URL final (após redirecionamentos)
       const finalUrl = data?.status?.url || '';
-      const coords = extrairCoordenadas(finalUrl);
-      if (coords) return coords;
-      // Tenta extrair do HTML retornado também
+      if (finalUrl) {
+        const c = extrairCoordenadas(finalUrl);
+        if (c) return c;
+      }
+
+      // Tenta extrair do HTML retornado
       const html = data?.contents || '';
-      const mMatch = html.match(/canonical[^>]+href="([^"]+maps[^"]+)"/);
-      if (mMatch) return extrairCoordenadas(mMatch[1]);
+
+      // Padrão canonical
+      const mCanon = html.match(/canonical[^>]+href="([^"]+)"/);
+      if (mCanon) {
+        const c = extrairCoordenadas(mCanon[1]);
+        if (c) return c;
+      }
+
+      // Coordenadas cruas no HTML (ex: ",-29.828008,-50.597901")
+      const mCoord = html.match(/(-2[0-9]\.\d{4,}),\s*[+]?(-5[0-9]\.\d{4,})/);
+      if (mCoord) {
+        const lat = parseFloat(mCoord[1]), lng = parseFloat(mCoord[2].replace('+',''));
+        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+      }
+
       return null;
     } catch {
       return null;
