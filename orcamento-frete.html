@@ -347,16 +347,12 @@
           <input type="number" id="pPedagio" value="2.75" step="0.01" min="0">
         </div>
         <div class="param-field">
-          <label for="pValorKm">Valor Km (R$)</label>
+          <label for="pValorKm">Material (R$)</label>
           <input type="number" id="pValorKm" value="25.20" step="0.01" min="0">
         </div>
         <div class="param-field">
           <label for="pArrancada">Arrancada Prancha (R$)</label>
-          <input type="number" id="pArrancada" value="2.60" step="0.01" min="0">
-        </div>
-        <div class="param-field">
-          <label for="pMaterial">Material (R$)</label>
-          <input type="number" id="pMaterial" value="0" step="0.01" min="0">
+          <input type="number" id="pArrancada" value="700" step="1" min="0">
         </div>
         <div class="param-field">
           <label for="pNF">NF (%)</label>
@@ -704,16 +700,15 @@
 
     const diesel    = parseFloat(document.getElementById('pDiesel').value)    || 6;
     const pedagio   = parseFloat(document.getElementById('pPedagio').value)   || 0;
-    const valorKm   = parseFloat(document.getElementById('pValorKm').value)   || 0;
+    const material  = parseFloat(document.getElementById('pValorKm').value)   || 0;
     const arrancada = parseFloat(document.getElementById('pArrancada').value) || 0;
-    const material  = parseFloat(document.getElementById('pMaterial').value)  || 0;
     const nfPct     = parseFloat(document.getElementById('pNF').value)        || 0;
     const commPct   = parseFloat(document.getElementById('pComissao').value)  || 0;
 
     // --- Tipo 1 — 2,5 km/L ---
     const cd1   = ((dist*2)/2.5)*diesel;
     const f50_1 = ((cd1*100)/50)/12;
-    const com1  = f50_1 + pedagio + valorKm + material;
+    const com1  = f50_1 + pedagio + material;
     const base1 = com1*12;
     const ad1   = aplicarAdicionais(base1, nfPct, commPct);
     document.getElementById('total1').innerHTML = R(ad1.total);
@@ -721,12 +716,11 @@
       linha('Custo Diesel (ida+volta)', cd1) +
       linha('Frete a 50%', f50_1) +
       linha('Pedágio', pedagio) +
-      linha('Valor Km rodado', valorKm) +
       (material>0 ? linha('Material', material) : '') +
       linhaSubtotal('Subtotal', base1) +
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad1.nfValor) : '') +
       (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad1.commValor) : '') +
-      `<div class="result-meta">Total da carga: ${R((ad1.total - valorKm*12)/(dist*2))}/km</div>`;
+      `<div class="result-meta">Valor Km rodado: ${R((ad1.total - material*12)/(dist*2))}/km</div>`;
 
     // --- Tipo 2 — Prancha 1,25 km/L ---
     const cd2  = ((dist*2)/1.25)*diesel;
@@ -762,7 +756,7 @@
     // --- Tipo 4 — 3 km/L ---
     const cd4  = ((dist*2)/3)*diesel;
     const f50_4= ((cd4*100)/50)/12;
-    const com4 = f50_4 + pedagio + valorKm + material;
+    const com4 = f50_4 + pedagio + material;
     const base4= com4*12;
     const ad4  = aplicarAdicionais(base4, nfPct, commPct);
     document.getElementById('total4').innerHTML = R(ad4.total);
@@ -770,11 +764,11 @@
       linha('Custo Diesel (ida+volta)', cd4) +
       linha('Frete a 50%', f50_4) +
       linha('Pedágio', pedagio) +
-      linha('Valor Km rodado', valorKm) +
       (material>0 ? linha('Material', material) : '') +
       linhaSubtotal('Subtotal', base4) +
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad4.nfValor) : '') +
-      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad4.commValor) : '');
+      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad4.commValor) : '') +
+      `<div class="result-meta">Valor Km rodado: ${R((ad4.total - material*12)/(dist*2))}/km</div>`;
 
     const origemNome = jazidas[origemVal] || 'Origem';
     document.getElementById('distBadge').textContent = `${origemNome} → ${dist.toFixed(1)} km (ida)`;
