@@ -151,7 +151,15 @@
     .btn-ver-rota:active { transform: scale(0.97); }
 
     /* Distância manual */
-    .dist-row { display: flex; gap: 8px; align-items: flex-end; margin-top: 10px; }
+    .dist-manual-section {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .dist-manual-section .dist-manual-label {
+      font-size: 0.75rem; color: #888; margin-bottom: 8px; font-weight: 600;
+    }
+    .dist-row { display: flex; gap: 8px; align-items: flex-end; }
     .dist-row .field { flex: 1; }
     .dist-row label { margin-bottom: 5px; }
 
@@ -205,6 +213,11 @@
       font-size: 0.8rem; color: #666; padding: 2px 0;
     }
     .result-row .val { font-weight: 500; }
+    .result-row.subtotal {
+      border-top: 1px dashed rgba(0,0,0,0.1);
+      margin-top: 4px; padding-top: 6px;
+      font-weight: 700; color: #444;
+    }
     .result-meta { font-size: 0.73rem; color: #999; margin-top: 6px; }
 
     .dist-badge {
@@ -270,18 +283,20 @@
       </a>
     </div>
 
-    <!-- Distância manual (fallback) -->
+    <!-- Distância manual — aparece sempre após processar destino -->
     <div id="distManualWrap" style="display:none">
-      <div class="dist-row">
-        <div class="field">
-          <label for="distManual">Distância de ida (km)</label>
-          <input type="number" id="distManual" placeholder="ex: 45" min="0" step="0.1">
+      <div class="dist-manual-section">
+        <div class="dist-manual-label" id="distManualLabel">📏 Ou insira o Km de ida manualmente:</div>
+        <div class="dist-row">
+          <div class="field">
+            <input type="number" id="distManual" placeholder="ex: 45" min="0" step="0.1">
+          </div>
         </div>
+        <a id="btnVerRota1" class="btn-ver-rota" href="#" target="_blank" style="display:none">
+          🗺️ Traçar rota no Maps → ver distância
+        </a>
+        <p class="hint" id="distHintTxt" style="margin-top:6px; display:none">Insira a distância de ida (apenas um sentido).</p>
       </div>
-      <a id="btnVerRota1" class="btn-ver-rota" href="#" target="_blank" style="display:none">
-        🗺️ Traçar rota no Maps → ver distância
-      </a>
-      <p class="hint" id="distHintTxt" style="margin-top:6px">Insira a distância de ida (apenas um sentido).</p>
     </div>
   </div>
 
@@ -294,11 +309,11 @@
     <div class="accordion-body" id="paramBody">
       <div class="param-grid">
         <div class="param-field">
-          <label for="pDiesel">Preço Diesel (R$/L)</label>
+          <label for="pDiesel">Preço Diesel (R$)</label>
           <input type="number" id="pDiesel" value="6.00" step="0.01" min="0">
         </div>
         <div class="param-field">
-          <label for="pPedagio">Pedágio (R$)</label>
+          <label for="pPedagio">Pedágio (R$/M³)</label>
           <input type="number" id="pPedagio" value="2.75" step="0.01" min="0">
         </div>
         <div class="param-field">
@@ -306,7 +321,7 @@
           <input type="number" id="pValorKm" value="25.20" step="0.01" min="0">
         </div>
         <div class="param-field">
-          <label for="pArrancada">Arrancada (R$)</label>
+          <label for="pArrancada">Arrancada Prancha (R$)</label>
           <input type="number" id="pArrancada" value="2.60" step="0.01" min="0">
         </div>
         <div class="param-field">
@@ -314,12 +329,12 @@
           <input type="number" id="pMaterial" value="0" step="0.01" min="0">
         </div>
         <div class="param-field">
-          <label for="pNF">NF (R$)</label>
-          <input type="number" id="pNF" value="0" step="0.01" min="0">
+          <label for="pNF">NF (%)</label>
+          <input type="number" id="pNF" value="0" step="0.1" min="0" max="100">
         </div>
         <div class="param-field">
-          <label for="pFreteNFPrancha">Frete NF Prancha (R$)</label>
-          <input type="number" id="pFreteNFPrancha" value="700" step="1" min="0">
+          <label for="pComissao">Comissão de Vendas (%)</label>
+          <input type="number" id="pComissao" value="0" step="0.1" min="0" max="100">
         </div>
       </div>
     </div>
@@ -389,7 +404,7 @@
     '-29.837626,-50.556412': 'São Joaquim',
   };
 
-  const R = v => 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const R = v => 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
   function fmtDur(segundos) {
     const h = Math.floor(segundos / 3600);
@@ -399,7 +414,6 @@
   }
 
   function extrairCoordenadas(url) {
-    // Normaliza: remove o + antes de números negativos (ex: "+-50.59" → "-50.59")
     const u = url.replace(/\+(-\d)/g, '$1');
     const padroes = [
       /[?&]q=(-?\d+\.\d+),\s*(-?\d+\.\d+)/,
@@ -431,7 +445,6 @@
 
   function hideStatus() { document.getElementById('statusBar').style.display = 'none'; }
 
-  // Resolve link curto via função Vercel e extrai coordenadas
   async function resolverLinkCurto(shortUrl) {
     try {
       const apiUrl = `/api/resolve?url=${encodeURIComponent(shortUrl)}`;
@@ -448,7 +461,6 @@
     }
   }
 
-  // Busca rotas via OSRM (até 3 alternativas)
   async function buscarRotasOSRM(origemStr, dest) {
     const [oLat, oLng] = origemStr.split(',').map(Number);
     const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dest.lng},${dest.lat}?overview=false&alternatives=true`;
@@ -467,14 +479,40 @@
     return `https://maps.google.com/maps?saddr=${oLat},${oLng}&daddr=${dest.lat},${dest.lng}`;
   }
 
+  function mostrarDistManual(origemStr, dest, modoFallback) {
+    const wrap = document.getElementById('distManualWrap');
+    const label = document.getElementById('distManualLabel');
+    const btn = document.getElementById('btnVerRota1');
+    const hint = document.getElementById('distHintTxt');
+
+    wrap.style.display = 'block';
+
+    if (modoFallback) {
+      label.textContent = '📏 Insira o Km de ida:';
+      hint.style.display = 'block';
+      if (dest) {
+        btn.href = montarLinkMaps(origemStr, dest);
+        btn.innerHTML = '🗺️ Traçar rota no Maps → ver distância';
+        btn.style.display = 'flex';
+      } else {
+        const linkCurto = document.getElementById('destLink').value.trim();
+        btn.href = linkCurto;
+        btn.innerHTML = '📍 Abrir destino no Maps';
+        btn.style.display = 'flex';
+      }
+    } else {
+      label.textContent = '📏 Ou insira o Km de ida manualmente (sobrescreve a rota acima):';
+      hint.style.display = 'none';
+      btn.style.display = 'none';
+    }
+  }
+
   function renderRotas(rotas, origemStr, dest) {
     const container = document.getElementById('rotasContainer');
     const lista = document.getElementById('rotasLista');
     const btnVer = document.getElementById('btnVerRotas');
 
-    // Ordena por distância para identificar a mais curta
-    const distancias = rotas.map(r => r.distKm);
-    const menorDist = Math.min(...distancias);
+    const menorDist = Math.min(...rotas.map(r => r.distKm));
     const menorDur  = Math.min(...rotas.map(r => r.durSeg));
 
     lista.innerHTML = rotas.map((r, i) => {
@@ -497,12 +535,13 @@
         </label>`;
     }).join('');
 
-    // Seleciona a primeira por padrão
     rotaSelecionadaKm = rotas[0].distKm;
 
     btnVer.href = montarLinkMaps(origemStr, dest);
     container.style.display = 'block';
-    document.getElementById('distManualWrap').style.display = 'none';
+
+    // Mostra campo manual como opção adicional (não fallback)
+    mostrarDistManual(origemStr, dest, false);
     atualizarBotaoCalcular();
   }
 
@@ -517,19 +556,7 @@
   function mostrarFallbackManual(origemStr, dest) {
     document.getElementById('distManualWrap').style.display = 'block';
     document.getElementById('rotasContainer').style.display = 'none';
-    const btn = document.getElementById('btnVerRota1');
-    if (dest) {
-      // Tem coordenadas: abre rota completa
-      btn.href = montarLinkMaps(origemStr, dest);
-      btn.innerHTML = '🗺️ Traçar rota no Maps → ver distância';
-      btn.style.display = 'flex';
-    } else {
-      // Link curto: abre só o destino, usuário traça de lá
-      const linkCurto = document.getElementById('destLink').value.trim();
-      btn.href = linkCurto;
-      btn.innerHTML = '📍 Abrir destino no Maps';
-      btn.style.display = 'flex';
-    }
+    mostrarDistManual(origemStr, dest, true);
   }
 
   async function processarLink(url) {
@@ -549,7 +576,6 @@
 
     let coords = extrairCoordenadas(url);
 
-    // Link curto: tenta resolver via proxy para extrair coordenadas
     if (!coords && isUrlCurta(url)) {
       showStatus('loading', 'Resolvendo link curto…');
       coords = await resolverLinkCurto(url);
@@ -612,77 +638,102 @@
     return `<div class="result-row"><span>${label}</span><span class="val">${R(valor)}</span></div>`;
   }
 
+  function linhaSubtotal(label, valor) {
+    return `<div class="result-row subtotal"><span>${label}</span><span class="val">${R(valor)}</span></div>`;
+  }
+
+  function aplicarAdicionais(base, nfPct, commPct) {
+    const aposNF    = base * (1 + nfPct / 100);
+    const aposComm  = aposNF * (1 + commPct / 100);
+    return {
+      nfValor:   aposNF - base,
+      commValor: aposComm - aposNF,
+      total:     aposComm,
+    };
+  }
+
   function calcular() {
-    const distManual = parseFloat(document.getElementById('distManual').value);
-    const dist = rotaSelecionadaKm != null ? rotaSelecionadaKm : distManual;
+    // Distância: campo manual tem prioridade sobre rota selecionada
+    const distManualVal = parseFloat(document.getElementById('distManual').value);
+    const dist = (distManualVal > 0) ? distManualVal : rotaSelecionadaKm;
     if (!dist || dist <= 0) { alert('Selecione uma rota ou insira a distância.'); return; }
 
     const origemVal = document.getElementById('origem').value;
     if (!origemVal) { alert('Selecione a origem.'); return; }
 
-    const diesel        = parseFloat(document.getElementById('pDiesel').value)       || 6;
-    const pedagio       = parseFloat(document.getElementById('pPedagio').value)      || 0;
-    const valorKm       = parseFloat(document.getElementById('pValorKm').value)      || 0;
-    const arrancada     = parseFloat(document.getElementById('pArrancada').value)    || 0;
-    const material      = parseFloat(document.getElementById('pMaterial').value)     || 0;
-    const nf            = parseFloat(document.getElementById('pNF').value)           || 0;
-    const freteNFPrancha= parseFloat(document.getElementById('pFreteNFPrancha').value)|| 700;
+    const diesel    = parseFloat(document.getElementById('pDiesel').value)    || 6;
+    const pedagio   = parseFloat(document.getElementById('pPedagio').value)   || 0;
+    const valorKm   = parseFloat(document.getElementById('pValorKm').value)   || 0;
+    const arrancada = parseFloat(document.getElementById('pArrancada').value) || 0;
+    const material  = parseFloat(document.getElementById('pMaterial').value)  || 0;
+    const nfPct     = parseFloat(document.getElementById('pNF').value)        || 0;
+    const commPct   = parseFloat(document.getElementById('pComissao').value)  || 0;
 
-    // Tipo 1 — 2,5 km/L
+    // --- Tipo 1 — 2,5 km/L ---
     const cd1   = ((dist*2)/2.5)*diesel;
     const f50_1 = ((cd1*100)/50)/12;
-    const fNF1  = f50_1*1.12;
-    const com1  = f50_1 + pedagio + valorKm + material + nf;
-    const tot1  = com1*12;
-    const carga1= (tot1 - valorKm*12)/(dist*2);
-    document.getElementById('total1').innerHTML = R(tot1)+'<small> /mês</small>';
+    const com1  = f50_1 + pedagio + valorKm + material;
+    const base1 = com1*12;
+    const ad1   = aplicarAdicionais(base1, nfPct, commPct);
+    document.getElementById('total1').innerHTML = R(ad1.total)+'<small> /mês</small>';
     document.getElementById('rows1').innerHTML =
       linha('Custo Diesel (ida+volta)', cd1) +
       linha('Frete a 50%', f50_1) +
-      linha('Frete com NF', fNF1) +
       linha('Pedágio', pedagio) +
       linha('Valor Km rodado', valorKm) +
-      (material>0?linha('Material',material):'') +
-      (nf>0?linha('NF',nf):'') +
-      `<div class="result-meta">Total da carga: ${R(carga1)}/km</div>`;
+      (material>0 ? linha('Material', material) : '') +
+      linhaSubtotal('Subtotal', base1) +
+      (nfPct>0 ? linha(`NF (${nfPct}%)`, ad1.nfValor) : '') +
+      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad1.commValor) : '') +
+      `<div class="result-meta">Total da carga: ${R((ad1.total - valorKm*12)/(dist*2))}/km</div>`;
 
-    // Tipo 2 — Prancha 1,25 km/L
+    // --- Tipo 2 — Prancha 1,25 km/L ---
     const cd2  = ((dist*2)/1.25)*diesel;
     const f50_2= (cd2*100)/50;
-    const tot2 = f50_2 + freteNFPrancha + pedagio + material;
-    document.getElementById('total2').innerHTML = R(tot2);
+    const base2= f50_2 + arrancada + pedagio + material;
+    const ad2  = aplicarAdicionais(base2, nfPct, commPct);
+    document.getElementById('total2').innerHTML = R(ad2.total);
     document.getElementById('rows2').innerHTML =
       linha('Custo Diesel (ida+volta)', cd2) +
       linha('Frete a 50%', f50_2) +
-      linha('Frete com NF (fixo)', freteNFPrancha) +
-      (pedagio>0?linha('Pedágio',pedagio):'') +
-      (material>0?linha('Material',material):'');
+      (arrancada>0 ? linha('Arrancada Prancha', arrancada) : '') +
+      (pedagio>0 ? linha('Pedágio', pedagio) : '') +
+      (material>0 ? linha('Material', material) : '') +
+      linhaSubtotal('Subtotal', base2) +
+      (nfPct>0 ? linha(`NF (${nfPct}%)`, ad2.nfValor) : '') +
+      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad2.commValor) : '');
 
-    // Tipo 3 — >50km, 3 km/L
+    // --- Tipo 3 — >50km, 3 km/L ---
     const cd3  = ((dist*2)/3)*diesel;
     const f50_3= ((cd3*100)/50)/12;
-    const com3 = f50_3 + arrancada + material;
-    const tot3 = com3*12;
-    document.getElementById('total3').innerHTML = R(tot3)+'<small> /mês</small>';
+    const com3 = f50_3 + material;
+    const base3= com3*12;
+    const ad3  = aplicarAdicionais(base3, nfPct, commPct);
+    document.getElementById('total3').innerHTML = R(ad3.total)+'<small> /mês</small>';
     document.getElementById('rows3').innerHTML =
       linha('Custo Diesel (ida+volta)', cd3) +
       linha('Frete a 50%', f50_3) +
-      linha('Arrancada', arrancada) +
-      (material>0?linha('Material',material):'');
+      (material>0 ? linha('Material', material) : '') +
+      linhaSubtotal('Subtotal', base3) +
+      (nfPct>0 ? linha(`NF (${nfPct}%)`, ad3.nfValor) : '') +
+      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad3.commValor) : '');
 
-    // Tipo 4 — 3 km/L
+    // --- Tipo 4 — 3 km/L ---
     const cd4  = ((dist*2)/3)*diesel;
     const f50_4= ((cd4*100)/50)/12;
-    const com4 = f50_4 + pedagio + valorKm + material + nf;
-    const tot4 = com4*12;
-    document.getElementById('total4').innerHTML = R(tot4)+'<small> /mês</small>';
+    const com4 = f50_4 + pedagio + valorKm + material;
+    const base4= com4*12;
+    const ad4  = aplicarAdicionais(base4, nfPct, commPct);
+    document.getElementById('total4').innerHTML = R(ad4.total)+'<small> /mês</small>';
     document.getElementById('rows4').innerHTML =
       linha('Custo Diesel (ida+volta)', cd4) +
       linha('Frete a 50%', f50_4) +
       linha('Pedágio', pedagio) +
       linha('Valor Km rodado', valorKm) +
-      (material>0?linha('Material',material):'') +
-      (nf>0?linha('NF',nf):'');
+      (material>0 ? linha('Material', material) : '') +
+      linhaSubtotal('Subtotal', base4) +
+      (nfPct>0 ? linha(`NF (${nfPct}%)`, ad4.nfValor) : '') +
+      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad4.commValor) : '');
 
     const origemNome = jazidas[origemVal] || 'Origem';
     document.getElementById('distBadge').textContent = `${origemNome} → ${dist.toFixed(1)} km (ida)`;
