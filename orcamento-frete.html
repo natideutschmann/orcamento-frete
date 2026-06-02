@@ -184,6 +184,28 @@
     .param-field label { font-size: 0.78rem; margin-bottom: 4px; }
     .param-field input  { font-size: 0.88rem; padding: 10px 12px; }
 
+    /* Pedágio com checkbox */
+    .pedagio-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .pedagio-check-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; border: 1.5px solid #e0e0e0;
+      border-radius: 10px; background: #fafafa; cursor: pointer;
+    }
+    .pedagio-check-row.ativo { border-color: #4361ee; background: #eff3ff; }
+    .pedagio-check-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #4361ee; }
+    .pedagio-check-row .pcheck-label { font-size: 0.88rem; flex: 1; color: #444; }
+    .pedagio-check-row .pcheck-val { font-size: 0.88rem; font-weight: 700; color: #4361ee; }
+    .pedagio-input-wrap { display: none; }
+    .pedagio-input-wrap.visivel { display: block; }
+
+    /* Preço por M³ nos resultados */
+    .result-m3 {
+      display: flex; justify-content: space-between;
+      font-size: 0.82rem; font-weight: 700;
+      color: #1a1a2e; padding: 6px 0 2px;
+      border-top: 1.5px solid rgba(0,0,0,0.1); margin-top: 6px;
+    }
+
     /* Botão calcular */
     .btn-calcular {
       display: block; width: 100%; padding: 15px;
@@ -350,8 +372,17 @@
           <input type="number" id="pDiesel" value="6.00" step="0.01" min="0">
         </div>
         <div class="param-field">
-          <label for="pPedagio">Pedágio (R$/M³)</label>
-          <input type="number" id="pPedagio" value="2.75" step="0.01" min="0">
+          <label>Pedágio (R$/M³)</label>
+          <div class="pedagio-wrap">
+            <div class="pedagio-check-row" id="pedagioCheckRow" onclick="togglePedagio()">
+              <input type="checkbox" id="usarPedagio" onclick="event.stopPropagation(); togglePedagio()">
+              <span class="pcheck-label">Incluir pedágio</span>
+              <span class="pcheck-val">R$ 2,75</span>
+            </div>
+            <div class="pedagio-input-wrap" id="pedagioInputWrap">
+              <input type="number" id="pPedagio" value="2.75" step="0.01" min="0" placeholder="Valor do pedágio">
+            </div>
+          </div>
         </div>
         <div class="param-field">
           <label for="pValorKm">Material (R$)</label>
@@ -673,6 +704,24 @@
     document.getElementById('btnCalcular').disabled = !(origem && temDist);
   }
 
+  function togglePedagio() {
+    const cb = document.getElementById('usarPedagio');
+    const row = document.getElementById('pedagioCheckRow');
+    const inputWrap = document.getElementById('pedagioInputWrap');
+    // Sincroniza o checkbox (pode ter sido acionado pelo div ou pelo input)
+    const ativo = cb.checked;
+    row.classList.toggle('ativo', ativo);
+    inputWrap.classList.toggle('visivel', ativo);
+    // Atualiza o valor exibido no botão conforme campo
+    atualizarValPedagio();
+  }
+
+  function atualizarValPedagio() {
+    const val = parseFloat(document.getElementById('pPedagio').value) || 2.75;
+    document.querySelector('.pcheck-val').textContent =
+      'R$ ' + val.toFixed(2).replace('.', ',');
+  }
+
   function toggleParams() {
     document.getElementById('paramHeader').classList.toggle('open');
     document.getElementById('paramBody').classList.toggle('open');
@@ -706,7 +755,8 @@
     if (!origemVal) { alert('Selecione a origem.'); return; }
 
     const diesel    = parseFloat(document.getElementById('pDiesel').value)    || 6;
-    const pedagio   = parseFloat(document.getElementById('pPedagio').value)   || 0;
+    const usarPed   = document.getElementById('usarPedagio').checked;
+    const pedagio   = usarPed ? (parseFloat(document.getElementById('pPedagio').value) || 0) : 0;
     const material  = parseFloat(document.getElementById('pValorKm').value)   || 0;
     const arrancada = parseFloat(document.getElementById('pArrancada').value) || 0;
     const nfPct     = parseFloat(document.getElementById('pNF').value)        || 0;
@@ -727,6 +777,7 @@
       linhaSubtotal('Subtotal', base1) +
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad1.nfValor) : '') +
       (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad1.commValor) : '') +
+      `<div class="result-m3"><span>💰 Preço por M³ (12 m³)</span><span>${R(ad1.total/12)}/m³</span></div>` +
       `<div class="result-meta">Valor Km rodado: ${R((ad1.total - material*12)/(dist*2))}/km</div>`;
 
     // --- Tipo 2 — Prancha 1,25 km/L ---
@@ -758,7 +809,8 @@
       (material>0 ? linha('Material', material) : '') +
       linhaSubtotal('Subtotal', base3) +
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad3.nfValor) : '') +
-      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad3.commValor) : '');
+      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad3.commValor) : '') +
+      `<div class="result-m3"><span>💰 Preço por M³ (12 m³)</span><span>${R(ad3.total/12)}/m³</span></div>`;
 
     // --- Tipo 4 — 3 km/L ---
     const cd4  = ((dist*2)/3)*diesel;
@@ -775,6 +827,7 @@
       linhaSubtotal('Subtotal', base4) +
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad4.nfValor) : '') +
       (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad4.commValor) : '') +
+      `<div class="result-m3"><span>💰 Preço por M³ (12 m³)</span><span>${R(ad4.total/12)}/m³</span></div>` +
       `<div class="result-meta">Valor Km rodado: ${R((ad4.total - material*12)/(dist*2))}/km</div>`;
 
     const origemNome = jazidas[origemVal] || 'Origem';
@@ -846,6 +899,7 @@
   });
 
   document.getElementById('distManual').addEventListener('input', atualizarBotaoCalcular);
+  document.getElementById('pPedagio').addEventListener('input', atualizarValPedagio);
 </script>
 
 </body>
