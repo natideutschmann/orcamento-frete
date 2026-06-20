@@ -322,14 +322,31 @@
   <!-- DESTINO -->
   <div class="card">
     <div class="card-title">🎯 Destino</div>
-    <label for="destLink">Link do Google Maps</label>
-    <div class="dest-input-wrap">
-      <input type="text" id="destLink"
-        placeholder="Cole o link do WhatsApp aqui..."
-        autocomplete="off" autocorrect="off" spellcheck="false">
-      <button class="clear-btn" id="clearLink" onclick="clearDestino()" style="display:none">✕</button>
+
+    <!-- Distância manual — sempre visível -->
+    <div id="distManualWrap">
+      <label for="distManual">Distância de ida (km)</label>
+      <div class="dist-row">
+        <div class="field">
+          <input type="number" id="distManual" placeholder="ex: 45" min="0" step="0.1">
+        </div>
+      </div>
+      <p class="hint">Insira apenas a distância de ida (o app multiplica por 2 internamente).</p>
     </div>
-    <p class="hint">Cole qualquer link do Maps (google.com/maps, maps.app.goo.gl…)</p>
+
+    <!-- Ou cole o link do Maps para calcular automaticamente -->
+    <div class="dist-manual-section" style="margin-top:12px; padding-top:12px; border-top:1px solid #f0f0f0;">
+      <div class="dist-manual-label" style="font-size:0.75rem; color:#888; margin-bottom:8px; font-weight:600;">
+        Ou cole o link do Google Maps para calcular automaticamente:
+      </div>
+      <div class="dest-input-wrap">
+        <input type="text" id="destLink"
+          placeholder="maps.app.goo.gl/… ou google.com/maps/…"
+          autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="clear-btn" id="clearLink" onclick="clearDestino()" style="display:none">✕</button>
+      </div>
+      <p class="hint">Cole qualquer link do Maps recebido no WhatsApp.</p>
+    </div>
 
     <div id="statusBar" style="display:none"></div>
 
@@ -340,22 +357,9 @@
       <a id="btnVerRotas" class="btn-ver-rota" href="#" target="_blank">
         🗺️ Ver todas as rotas no Maps
       </a>
-    </div>
-
-    <!-- Distância manual — aparece sempre após processar destino -->
-    <div id="distManualWrap" style="display:none">
-      <div class="dist-manual-section">
-        <div class="dist-manual-label" id="distManualLabel">📏 Ou insira o Km de ida manualmente:</div>
-        <div class="dist-row">
-          <div class="field">
-            <input type="number" id="distManual" placeholder="ex: 45" min="0" step="0.1">
-          </div>
-        </div>
-        <a id="btnVerRota1" class="btn-ver-rota" href="#" target="_blank" style="display:none">
-          🗺️ Traçar rota no Maps → ver distância
-        </a>
-        <p class="hint" id="distHintTxt" style="margin-top:6px; display:none">Insira a distância de ida (apenas um sentido).</p>
-      </div>
+      <a id="btnVerRota1" class="btn-ver-rota" href="#" target="_blank" style="display:none">
+        🗺️ Traçar rota no Maps → ver distância
+      </a>
     </div>
   </div>
 
@@ -555,29 +559,12 @@
   }
 
   function mostrarDistManual(origemStr, dest, modoFallback) {
-    const wrap = document.getElementById('distManualWrap');
-    const label = document.getElementById('distManualLabel');
+    // distManualWrap é sempre visível; apenas gerencia o btnVerRota1
     const btn = document.getElementById('btnVerRota1');
-    const hint = document.getElementById('distHintTxt');
-
-    wrap.style.display = 'block';
-
-    if (modoFallback) {
-      label.textContent = '📏 Insira o Km de ida:';
-      hint.style.display = 'block';
-      if (dest) {
-        btn.href = montarLinkMaps(origemStr, dest);
-        btn.innerHTML = '🗺️ Traçar rota no Maps → ver distância';
-        btn.style.display = 'flex';
-      } else {
-        const linkCurto = document.getElementById('destLink').value.trim();
-        btn.href = linkCurto;
-        btn.innerHTML = '📍 Abrir destino no Maps';
-        btn.style.display = 'flex';
-      }
+    if (modoFallback && dest && origemStr) {
+      btn.href = montarLinkMaps(origemStr, dest);
+      btn.style.display = 'flex';
     } else {
-      label.textContent = '📏 Ou insira o Km de ida manualmente (sobrescreve a rota acima):';
-      hint.style.display = 'none';
       btn.style.display = 'none';
     }
   }
@@ -629,7 +616,6 @@
   }
 
   function mostrarFallbackManual(origemStr, dest) {
-    document.getElementById('distManualWrap').style.display = 'block';
     document.getElementById('rotasContainer').style.display = 'none';
     mostrarDistManual(origemStr, dest, true);
   }
@@ -641,7 +627,6 @@
       destCoords = null; rotaSelecionadaKm = null;
       hideStatus();
       document.getElementById('rotasContainer').style.display = 'none';
-      document.getElementById('distManualWrap').style.display = 'none';
       document.getElementById('resultados').className = 'results-hidden';
       atualizarBotaoCalcular();
       return;
@@ -688,11 +673,9 @@
   function clearDestino() {
     document.getElementById('destLink').value = '';
     document.getElementById('clearLink').style.display = 'none';
-    document.getElementById('distManual').value = '';
     destCoords = null; rotaSelecionadaKm = null;
     hideStatus();
     document.getElementById('rotasContainer').style.display = 'none';
-    document.getElementById('distManualWrap').style.display = 'none';
     document.getElementById('resultados').className = 'results-hidden';
     atualizarBotaoCalcular();
   }
@@ -892,7 +875,6 @@
     const link = document.getElementById('destLink').value.trim();
     rotaSelecionadaKm = null;
     document.getElementById('rotasContainer').style.display = 'none';
-    document.getElementById('distManualWrap').style.display = 'none';
     hideStatus();
     if (link) processarLink(link);
     atualizarBotaoCalcular();
