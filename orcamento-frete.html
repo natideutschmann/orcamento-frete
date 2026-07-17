@@ -198,6 +198,16 @@
     .pedagio-input-wrap { display: none; }
     .pedagio-input-wrap.visivel { display: block; }
 
+    .tipo-toggle { display: flex; gap: 8px; }
+    .tipo-btn {
+      flex: 1; padding: 12px; border-radius: 12px;
+      border: 1.5px solid #e5e7eb; background: #fafafa; color: #666;
+      font-size: 0.92rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+    }
+    .tipo-btn.active {
+      background: #eff6ff; border-color: #4361ee; color: #4361ee;
+    }
+
     /* Preço por M³ nos resultados */
     .result-m3 {
       display: flex; justify-content: space-between;
@@ -259,6 +269,15 @@
     }
     .btn-whats:active { transform: scale(0.98); }
 
+    .btn-share-card {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; padding: 9px;
+      background: rgba(37,211,102,0.12); color: #128c4a; border: none;
+      border-radius: 10px; font-size: 0.78rem; font-weight: 700;
+      cursor: pointer; margin-top: 10px; transition: all 0.15s;
+    }
+    .btn-share-card:active { transform: scale(0.98); }
+
     .result-rows { border-top: 1px solid rgba(0,0,0,0.07); padding-top: 8px; }
     .result-row {
       display: flex; justify-content: space-between;
@@ -316,6 +335,15 @@
           <option value="-29.837626,-50.556412">São Joaquim</option>
         </optgroup>
       </select>
+    </div>
+  </div>
+
+  <!-- TIPO DE ORÇAMENTO -->
+  <div class="card">
+    <div class="card-title">🚛 Tipo de Orçamento</div>
+    <div class="tipo-toggle">
+      <button type="button" class="tipo-btn active" id="btnTipoCaminhao" onclick="selecionarTipoOrcamento('caminhao')">🚚 Caminhão</button>
+      <button type="button" class="tipo-btn" id="btnTipoPrancha" onclick="selecionarTipoOrcamento('prancha')">🛻 Prancha</button>
     </div>
   </div>
 
@@ -390,9 +418,9 @@
         </div>
         <div class="param-field">
           <label for="pValorKm">Material (R$)</label>
-          <input type="number" id="pValorKm" value="25.20" step="0.01" min="0">
+          <input type="number" id="pValorKm" value="26.70" step="0.01" min="0">
         </div>
-        <div class="param-field">
+        <div class="param-field" id="arrancadaField" style="display:none">
           <label for="pArrancada">Arrancada Prancha (R$)</label>
           <input type="number" id="pArrancada" value="700" step="1" min="0">
         </div>
@@ -426,6 +454,7 @@
         <div class="result-total" id="total1"></div>
       </div>
       <div class="result-rows" id="rows1"></div>
+      <button class="btn-share-card" onclick="compartilharOrcamento(1)">📤 Compartilhar</button>
     </div>
 
     <div class="result-card tipo-2">
@@ -434,6 +463,7 @@
         <div class="result-total" id="total2"></div>
       </div>
       <div class="result-rows" id="rows2"></div>
+      <button class="btn-share-card" onclick="compartilharOrcamento(2)">📤 Compartilhar</button>
     </div>
 
     <div class="result-card tipo-3">
@@ -442,6 +472,7 @@
         <div class="result-total" id="total3"></div>
       </div>
       <div class="result-rows" id="rows3"></div>
+      <button class="btn-share-card" onclick="compartilharOrcamento(3)">📤 Compartilhar</button>
     </div>
 
     <div class="result-card tipo-4">
@@ -450,6 +481,7 @@
         <div class="result-total" id="total4"></div>
       </div>
       <div class="result-rows" id="rows4"></div>
+      <button class="btn-share-card" onclick="compartilharOrcamento(4)">📤 Compartilhar</button>
     </div>
   </div>
 
@@ -687,6 +719,17 @@
     document.getElementById('btnCalcular').disabled = !(origem && temDist);
   }
 
+  let tipoOrcamento = 'caminhao';
+
+  function selecionarTipoOrcamento(tipo) {
+    tipoOrcamento = tipo;
+    document.getElementById('btnTipoCaminhao').classList.toggle('active', tipo === 'caminhao');
+    document.getElementById('btnTipoPrancha').classList.toggle('active', tipo === 'prancha');
+    document.getElementById('arrancadaField').style.display = (tipo === 'prancha') ? '' : 'none';
+    document.getElementById('pPedagio').value = (tipo === 'prancha') ? '33.00' : '2.75';
+    atualizarValPedagio();
+  }
+
   function togglePedagio() {
     const cb = document.getElementById('usarPedagio');
     const row = document.getElementById('pedagioCheckRow');
@@ -815,6 +858,13 @@
 
     const origemNome = jazidas[origemVal] || 'Origem';
     document.getElementById('distBadge').textContent = `${origemNome} → ${dist.toFixed(1)} km (ida)`;
+
+    const mostrarPrancha = (tipoOrcamento === 'prancha');
+    document.querySelector('.result-card.tipo-1').style.display = mostrarPrancha ? 'none' : '';
+    document.querySelector('.result-card.tipo-2').style.display = mostrarPrancha ? '' : 'none';
+    document.querySelector('.result-card.tipo-3').style.display = mostrarPrancha ? 'none' : '';
+    document.querySelector('.result-card.tipo-4').style.display = mostrarPrancha ? 'none' : '';
+
     document.getElementById('resultados').className = '';
     document.getElementById('fechamentoCard').style.display = 'block';
     document.getElementById('resultados').scrollIntoView({ behavior:'smooth', block:'start' });
@@ -846,6 +896,38 @@
       `📍 Origem: ${origemNome}\n` +
       `📏 Distância: ${distStr} (ida)\n` +
       `💰 Valor da carga: *${valorStr}*`;
+
+    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+  }
+
+  function compartilharOrcamento(tipo) {
+    const titulos = {
+      1: 'Caminhão 2,5 km/L',
+      2: 'Prancha (1,25 km/L)',
+      3: 'Trechos > 50km (3 km/L)',
+      4: 'Caminhão 3 km/L',
+    };
+    const cliente = document.getElementById('nomeCliente').value.trim();
+    const origemVal = document.getElementById('origem').value;
+    const origemNome = jazidas[origemVal] || 'Origem';
+    const distManualVal = parseFloat(document.getElementById('distManual').value);
+    const dist = (distManualVal > 0) ? distManualVal : rotaSelecionadaKm;
+    const distStr = dist ? `${dist.toFixed(1)} km` : '-';
+    const total = document.getElementById(`total${tipo}`).textContent;
+
+    const linhas = Array.from(document.querySelectorAll(`#rows${tipo} > div`)).map(div => {
+      const spans = div.querySelectorAll('span');
+      return spans.length >= 2 ? `${spans[0].textContent}: ${spans[1].textContent}` : div.textContent;
+    });
+
+    let msg = `🚛 *ORÇAMENTO DE FRETE*\n`;
+    msg += `📍 Origem: ${origemNome}\n`;
+    msg += `📏 Distância: ${distStr} (ida)\n`;
+    if (cliente) msg += `👤 Cliente: ${cliente}\n`;
+    msg += `\n*${titulos[tipo]}*\n`;
+    msg += linhas.join('\n');
+    msg += `\n\n💰 *Total: ${total}*`;
 
     const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
