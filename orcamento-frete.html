@@ -237,8 +237,6 @@
     }
     .result-card.tipo-1 { background: #eff6ff; border-color: #bfdbfe; }
     .result-card.tipo-2 { background: #fdf4ff; border-color: #e9d5ff; }
-    .result-card.tipo-3 { background: #f0fdf4; border-color: #bbf7d0; }
-    .result-card.tipo-4 { background: #fffbeb; border-color: #fde68a; }
     .result-card.tipo-5 { background: #f5f3ff; border-color: #ddd6fe; }
 
     .qtd-field { margin-bottom: 10px; }
@@ -333,6 +331,7 @@
         <option value="">— Selecione a origem —</option>
         <optgroup label="Nossas Jazidas">
           <option value="-29.828008,-50.597901">Saibreira Palmeira</option>
+          <option value="-29.832036,-50.595188">Pátio - Palmeira</option>
           <option value="-29.797370,-50.581143">Saibreira Solo</option>
           <option value="-29.776167,-50.596813">Saibreira Serraria</option>
           <option value="-29.746594,-50.577166">Pedreira 474</option>
@@ -485,32 +484,6 @@
       <button class="btn-share-card" onclick="compartilharOrcamento(2)">📤 Compartilhar</button>
     </div>
 
-    <div class="result-card tipo-3">
-      <div class="result-header">
-        <div class="result-title">TRECHOS &gt; 50km (3 km/L)</div>
-        <div class="result-total" id="total3"></div>
-      </div>
-      <div class="qtd-field">
-        <label for="qtd3">Quantidade a transportar (m³)</label>
-        <input type="number" id="qtd3" value="12" step="0.1" min="0.1" oninput="calcular()">
-      </div>
-      <div class="result-rows" id="rows3"></div>
-      <button class="btn-share-card" onclick="compartilharOrcamento(3)">📤 Compartilhar</button>
-    </div>
-
-    <div class="result-card tipo-4">
-      <div class="result-header">
-        <div class="result-title">CAMINHÃO 3 km/L</div>
-        <div class="result-total" id="total4"></div>
-      </div>
-      <div class="qtd-field">
-        <label for="qtd4">Quantidade a transportar (m³)</label>
-        <input type="number" id="qtd4" value="12" step="0.1" min="0.1" oninput="calcular()">
-      </div>
-      <div class="result-rows" id="rows4"></div>
-      <button class="btn-share-card" onclick="compartilharOrcamento(4)">📤 Compartilhar</button>
-    </div>
-
     <div class="result-card tipo-5">
       <div class="result-header">
         <div class="result-title">BITREM (2 km/L)</div>
@@ -545,6 +518,7 @@
 
   const jazidas = {
     '-29.828008,-50.597901': 'Saibreira Palmeira',
+    '-29.832036,-50.595188': 'Pátio - Palmeira',
     '-29.797370,-50.581143': 'Saibreira Solo',
     '-29.776167,-50.596813': 'Saibreira Serraria',
     '-29.746594,-50.577166': 'Pedreira 474',
@@ -847,8 +821,6 @@
     const commPct   = parseFloat(document.getElementById('pComissao').value)  || 0;
 
     const qtd1 = parseFloat(document.getElementById('qtd1').value) || 0;
-    const qtd3 = parseFloat(document.getElementById('qtd3').value) || 0;
-    const qtd4 = parseFloat(document.getElementById('qtd4').value) || 0;
     const qtd5 = parseFloat(document.getElementById('qtd5').value) || 0;
 
     // Diesel e pedágio são custo fixo da viagem (não escalam com a quantidade).
@@ -889,40 +861,6 @@
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad2.nfValor) : '') +
       (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad2.commValor) : '');
 
-    // --- Tipo 3 — Trechos >50km, 3 km/L (sem pedágio) ---
-    const cd3  = ((dist*2)/3)*diesel;
-    const frete3 = (cd3*100)/50;
-    const materialTotal3 = material*qtd3;
-    const base3= frete3 + materialTotal3;
-    const ad3  = aplicarAdicionais(base3, nfPct, commPct);
-    document.getElementById('total3').innerHTML = R(ad3.total);
-    document.getElementById('rows3').innerHTML =
-      linha('Custo Diesel (ida+volta)', cd3) +
-      linha('Frete a 50%', frete3) +
-      (material>0 ? linha(`Material (${qtd3} m³)`, materialTotal3) : '') +
-      linhaSubtotal('Subtotal', base3) +
-      (nfPct>0 ? linha(`NF (${nfPct}%)`, ad3.nfValor) : '') +
-      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad3.commValor) : '') +
-      `<div class="result-m3"><span>💰 Preço por M³ (${qtd3} m³)</span><span>${R(ad3.total/qtd3)}/m³</span></div>`;
-
-    // --- Tipo 4 — Caminhão 3 km/L ---
-    const cd4  = ((dist*2)/3)*diesel;
-    const frete4 = (cd4*100)/50;
-    const materialTotal4 = material*qtd4;
-    const base4= frete4 + pedagio + materialTotal4;
-    const ad4  = aplicarAdicionais(base4, nfPct, commPct);
-    document.getElementById('total4').innerHTML = R(ad4.total);
-    document.getElementById('rows4').innerHTML =
-      linha('Custo Diesel (ida+volta)', cd4) +
-      linha('Frete a 50%', frete4) +
-      linha('Pedágio', pedagio) +
-      (material>0 ? linha(`Material (${qtd4} m³)`, materialTotal4) : '') +
-      linhaSubtotal('Subtotal', base4) +
-      (nfPct>0 ? linha(`NF (${nfPct}%)`, ad4.nfValor) : '') +
-      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad4.commValor) : '') +
-      `<div class="result-m3"><span>💰 Preço por M³ (${qtd4} m³)</span><span>${R(ad4.total/qtd4)}/m³</span></div>` +
-      `<div class="result-meta">Valor Km rodado: ${R((ad4.total - materialTotal4)/(dist*2))}/km</div>`;
-
     // --- Tipo 5 — Bitrem 2 km/L ---
     const cd5  = ((dist*2)/2)*diesel;
     const frete5 = (cd5*100)/50;
@@ -945,8 +883,6 @@
     document.getElementById('distBadge').textContent = `${origemNome} → ${dist.toFixed(1)} km (ida)`;
 
     document.querySelector('.result-card.tipo-1').style.display = (tipoOrcamento === 'caminhao') ? '' : 'none';
-    document.querySelector('.result-card.tipo-3').style.display = (tipoOrcamento === 'caminhao') ? '' : 'none';
-    document.querySelector('.result-card.tipo-4').style.display = (tipoOrcamento === 'caminhao') ? '' : 'none';
     document.querySelector('.result-card.tipo-2').style.display = (tipoOrcamento === 'prancha') ? '' : 'none';
     document.querySelector('.result-card.tipo-5').style.display = (tipoOrcamento === 'bitrem') ? '' : 'none';
 
@@ -991,8 +927,6 @@
     const titulos = {
       1: 'Caminhão 2,5 km/L',
       2: 'Prancha (1,25 km/L)',
-      3: 'Trechos > 50km (3 km/L)',
-      4: 'Caminhão 3 km/L',
       5: 'Bitrem (2 km/L)',
     };
     const cliente = document.getElementById('nomeCliente').value.trim();
