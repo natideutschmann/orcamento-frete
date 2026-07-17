@@ -80,10 +80,10 @@ Campo "Quantidade a transportar (m³)" no card, padrão 12 m³.
 ```
 CustoDiesel  = (dist*2 / 1.25) * diesel
 Frete50%     = (CustoDiesel * 100/50)
-Subtotal     = Frete50% + arrancadaPrancha + pedágio + material
+Subtotal     = Frete50% + arrancadaPrancha + pedágio
 TotalFinal   = Subtotal * (1 + NF%) * (1 + Comissão%)
 ```
-Não tem campo de quantidade (m³) — carga de equipamento, não de material a granel. Pedágio aqui é valor total da viagem (não R$/m³). Quando o seletor "Prancha" está ativo, o campo já vem preenchido com R$ 33,00 (ver Histórico de decisões). O valor digitado é multiplicado por 2 internamente (ida+volta) — a praça de pedágio é cobrada nas duas passagens
+Não tem campo de quantidade (m³) — carga de equipamento, não de material a granel. Não cobra Material (campo fica oculto nos Parâmetros quando "Prancha" está selecionada — ver Histórico de decisões). Pedágio aqui é valor total da viagem (não R$/m³). Quando o seletor "Prancha" está ativo, o campo já vem preenchido com R$ 33,00. O valor digitado é multiplicado por 2 internamente (ida+volta) — a praça de pedágio é cobrada nas duas passagens
 
 ### Tipo 5 — Bitrem (2 km/L)
 ```
@@ -96,7 +96,7 @@ Campo "Quantidade a transportar (m³)" no card, padrão 30 m³ (faixa normal de 
 |-----------|--------|--------------|
 | Preço Diesel (R$) | R$ 6,00 | Todos os tipos |
 | Pedágio (R$ - viagem, valor fixo) | R$ 3,30 (Caminhão) / R$ 33,00 (Prancha) / R$ 46,20 ou R$ 39,60 (Bitrem) — **checkbox**, desmarcado por padrão | Todos os tipos quando ativado |
-| Material (R$/m³) | R$ 26,70 | Todos os tipos — multiplicado pela quantidade nos Tipos 1 e 5 (Prancha usa valor fixo, sem quantidade) |
+| Material (R$/m³) | R$ 26,70 | Tipos 1 e 5 (multiplicado pela quantidade). Campo oculto e não cobrado na Prancha |
 | Arrancada Prancha (R$) | R$ 700,00 | Tipo 2 (Prancha) apenas |
 | NF (%) | 12% | Todos os tipos — aplicado sobre o subtotal |
 | Comissão de Vendas (%) | 0% | Todos os tipos — aplicado após NF |
@@ -138,6 +138,7 @@ App para orcamentos/
 - **Quantidade variável (m³) por card (2026-07-17)**: antes, todos os caminhões assumiam carga fixa de 12 m³ (multiplicava tudo — diesel, pedágio e material — por 12). Isso estava incorreto: diesel e pedágio são custo da viagem, não mudam com a quantidade transportada. Motivo da mudança: usuário às vezes carrega 8 m³ em vez de 12, ou o Bitrem pode levar de 20 a 40 m³, e só o custo do material deveria variar nesses casos. Agora cada card (Tipos 1 e 5) tem um campo próprio "Quantidade a transportar (m³)" que recalcula ao vivo (oninput), e a fórmula foi reestruturada: Frete a 50% e Pedágio são valores fixos da viagem, só o Material é multiplicado pela quantidade. A Prancha (Tipo 2) não tem esse campo — não usa o conceito de m³, é cobrança por arrancada + pedágio + material fixo
 - **Tipos 3 e 4 removidos (2026-07-17)**: "Trechos > 50km (3 km/L)" e "Caminhão 3 km/L" foram retirados da opção "Caminhão" a pedido do usuário — não eram mais usados. Restou só o Tipo 1 (Caminhão 2,5 km/L) nessa opção
 - **Pátio - Palmeira adicionado como origem (2026-07-17)**: é de onde a Prancha normalmente sai (coordenadas resolvidas a partir de um link do Google Maps enviado pelo usuário)
+- **Material removido da Prancha (2026-07-17)**: a Prancha transporta equipamento, não material a granel — o campo Material some do painel de Parâmetros quando "Prancha" está selecionada e deixa de entrar no cálculo/card desse tipo (evita confusão, já que não fazia sentido cobrar material numa carga que não é medida em m³)
 
 ## Funcionalidades
 - Campo Nome do Cliente no topo
