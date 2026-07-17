@@ -207,6 +207,8 @@
     .tipo-btn.active {
       background: #eff6ff; border-color: #4361ee; color: #4361ee;
     }
+    .sub-toggle { margin-top: 8px; }
+    .tipo-btn.sub { padding: 8px; font-size: 0.78rem; }
 
     /* Preço por M³ nos resultados */
     .result-m3 {
@@ -237,6 +239,14 @@
     .result-card.tipo-2 { background: #fdf4ff; border-color: #e9d5ff; }
     .result-card.tipo-3 { background: #f0fdf4; border-color: #bbf7d0; }
     .result-card.tipo-4 { background: #fffbeb; border-color: #fde68a; }
+    .result-card.tipo-5 { background: #f5f3ff; border-color: #ddd6fe; }
+
+    .qtd-field { margin-bottom: 10px; }
+    .qtd-field label { display:block; font-size: 0.75rem; color: #666; font-weight: 600; margin-bottom: 4px; }
+    .qtd-field input {
+      width: 100%; padding: 8px 10px; border-radius: 8px;
+      border: 1.5px solid rgba(0,0,0,0.12); font-size: 0.9rem; background: rgba(255,255,255,0.6);
+    }
 
     .result-header {
       display: flex; justify-content: space-between;
@@ -344,6 +354,11 @@
     <div class="tipo-toggle">
       <button type="button" class="tipo-btn active" id="btnTipoCaminhao" onclick="selecionarTipoOrcamento('caminhao')">🚚 Caminhão</button>
       <button type="button" class="tipo-btn" id="btnTipoPrancha" onclick="selecionarTipoOrcamento('prancha')">🛻 Prancha</button>
+      <button type="button" class="tipo-btn" id="btnTipoBitrem" onclick="selecionarTipoOrcamento('bitrem')">🚛 Bitrem</button>
+    </div>
+    <div class="tipo-toggle sub-toggle" id="bitremSubToggle" style="display:none">
+      <button type="button" class="tipo-btn sub active" id="btnBitremCompleto" onclick="selecionarConfigBitrem('completo')">7 eixos (completo)</button>
+      <button type="button" class="tipo-btn sub" id="btnBitrem1Cacamba" onclick="selecionarConfigBitrem('1cacamba')">6 eixos (1 caçamba)</button>
     </div>
   </div>
 
@@ -404,15 +419,15 @@
           <input type="number" id="pDiesel" value="6.00" step="0.01" min="0">
         </div>
         <div class="param-field">
-          <label>Pedágio (R$/M³)</label>
+          <label>Pedágio (R$ - viagem)</label>
           <div class="pedagio-wrap">
             <div class="pedagio-check-row" id="pedagioCheckRow" onclick="togglePedagio()">
               <input type="checkbox" id="usarPedagio" onclick="event.stopPropagation(); togglePedagio()">
               <span class="pcheck-label">Incluir pedágio</span>
-              <span class="pcheck-val">R$ 2,75</span>
+              <span class="pcheck-val">R$ 3,30</span>
             </div>
             <div class="pedagio-input-wrap" id="pedagioInputWrap">
-              <input type="number" id="pPedagio" value="2.75" step="0.01" min="0" placeholder="Valor do pedágio">
+              <input type="number" id="pPedagio" value="3.30" step="0.01" min="0" placeholder="Valor do pedágio">
             </div>
           </div>
         </div>
@@ -453,6 +468,10 @@
         <div class="result-title">CAMINHÃO 2,5 km/L</div>
         <div class="result-total" id="total1"></div>
       </div>
+      <div class="qtd-field">
+        <label for="qtd1">Quantidade a transportar (m³)</label>
+        <input type="number" id="qtd1" value="12" step="0.1" min="0.1" oninput="calcular()">
+      </div>
       <div class="result-rows" id="rows1"></div>
       <button class="btn-share-card" onclick="compartilharOrcamento(1)">📤 Compartilhar</button>
     </div>
@@ -471,6 +490,10 @@
         <div class="result-title">TRECHOS &gt; 50km (3 km/L)</div>
         <div class="result-total" id="total3"></div>
       </div>
+      <div class="qtd-field">
+        <label for="qtd3">Quantidade a transportar (m³)</label>
+        <input type="number" id="qtd3" value="12" step="0.1" min="0.1" oninput="calcular()">
+      </div>
       <div class="result-rows" id="rows3"></div>
       <button class="btn-share-card" onclick="compartilharOrcamento(3)">📤 Compartilhar</button>
     </div>
@@ -480,8 +503,25 @@
         <div class="result-title">CAMINHÃO 3 km/L</div>
         <div class="result-total" id="total4"></div>
       </div>
+      <div class="qtd-field">
+        <label for="qtd4">Quantidade a transportar (m³)</label>
+        <input type="number" id="qtd4" value="12" step="0.1" min="0.1" oninput="calcular()">
+      </div>
       <div class="result-rows" id="rows4"></div>
       <button class="btn-share-card" onclick="compartilharOrcamento(4)">📤 Compartilhar</button>
+    </div>
+
+    <div class="result-card tipo-5">
+      <div class="result-header">
+        <div class="result-title">BITREM (2 km/L)</div>
+        <div class="result-total" id="total5"></div>
+      </div>
+      <div class="qtd-field">
+        <label for="qtd5">Quantidade a transportar (m³)</label>
+        <input type="number" id="qtd5" value="30" step="0.1" min="0.1" oninput="calcular()">
+      </div>
+      <div class="result-rows" id="rows5"></div>
+      <button class="btn-share-card" onclick="compartilharOrcamento(5)">📤 Compartilhar</button>
     </div>
   </div>
 
@@ -720,13 +760,31 @@
   }
 
   let tipoOrcamento = 'caminhao';
+  let configBitrem = 'completo';
+
+  const pedagioPadrao = { caminhao: '3.30', prancha: '33.00' };
+  const pedagioBitrem = { completo: '46.20', '1cacamba': '39.60' };
 
   function selecionarTipoOrcamento(tipo) {
     tipoOrcamento = tipo;
     document.getElementById('btnTipoCaminhao').classList.toggle('active', tipo === 'caminhao');
     document.getElementById('btnTipoPrancha').classList.toggle('active', tipo === 'prancha');
+    document.getElementById('btnTipoBitrem').classList.toggle('active', tipo === 'bitrem');
     document.getElementById('arrancadaField').style.display = (tipo === 'prancha') ? '' : 'none';
-    document.getElementById('pPedagio').value = (tipo === 'prancha') ? '33.00' : '2.75';
+    document.getElementById('bitremSubToggle').style.display = (tipo === 'bitrem') ? 'flex' : 'none';
+    if (tipo === 'bitrem') {
+      selecionarConfigBitrem(configBitrem);
+    } else {
+      document.getElementById('pPedagio').value = pedagioPadrao[tipo];
+      atualizarValPedagio();
+    }
+  }
+
+  function selecionarConfigBitrem(cfg) {
+    configBitrem = cfg;
+    document.getElementById('btnBitremCompleto').classList.toggle('active', cfg === 'completo');
+    document.getElementById('btnBitrem1Cacamba').classList.toggle('active', cfg === '1cacamba');
+    document.getElementById('pPedagio').value = pedagioBitrem[cfg];
     atualizarValPedagio();
   }
 
@@ -743,7 +801,7 @@
   }
 
   function atualizarValPedagio() {
-    const val = parseFloat(document.getElementById('pPedagio').value) || 2.75;
+    const val = parseFloat(document.getElementById('pPedagio').value) || 3.30;
     document.querySelector('.pcheck-val').textContent =
       'R$ ' + val.toFixed(2).replace('.', ',');
   }
@@ -788,86 +846,114 @@
     const nfPct     = parseFloat(document.getElementById('pNF').value)        || 0;
     const commPct   = parseFloat(document.getElementById('pComissao').value)  || 0;
 
-    // --- Tipo 1 — 2,5 km/L ---
+    const qtd1 = parseFloat(document.getElementById('qtd1').value) || 0;
+    const qtd3 = parseFloat(document.getElementById('qtd3').value) || 0;
+    const qtd4 = parseFloat(document.getElementById('qtd4').value) || 0;
+    const qtd5 = parseFloat(document.getElementById('qtd5').value) || 0;
+
+    // Diesel e pedágio são custo fixo da viagem (não escalam com a quantidade).
+    // Só o Material escala pela quantidade transportada (m³).
+
+    // --- Tipo 1 — Caminhão 2,5 km/L ---
     const cd1   = ((dist*2)/2.5)*diesel;
-    const f50_1 = ((cd1*100)/50)/12;
-    const com1  = f50_1 + pedagio + material;
-    const base1 = com1*12;
+    const frete1 = (cd1*100)/50;
+    const materialTotal1 = material*qtd1;
+    const base1 = frete1 + pedagio + materialTotal1;
     const ad1   = aplicarAdicionais(base1, nfPct, commPct);
     document.getElementById('total1').innerHTML = R(ad1.total);
     document.getElementById('rows1').innerHTML =
       linha('Custo Diesel (ida+volta)', cd1) +
-      linha('Frete a 50%', f50_1) +
+      linha('Frete a 50%', frete1) +
       linha('Pedágio', pedagio) +
-      (material>0 ? linha('Material', material) : '') +
+      (material>0 ? linha(`Material (${qtd1} m³)`, materialTotal1) : '') +
       linhaSubtotal('Subtotal', base1) +
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad1.nfValor) : '') +
       (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad1.commValor) : '') +
-      `<div class="result-m3"><span>💰 Preço por M³ (12 m³)</span><span>${R(ad1.total/12)}/m³</span></div>` +
-      `<div class="result-meta">Valor Km rodado: ${R((ad1.total - material*12)/(dist*2))}/km</div>`;
+      `<div class="result-m3"><span>💰 Preço por M³ (${qtd1} m³)</span><span>${R(ad1.total/qtd1)}/m³</span></div>` +
+      `<div class="result-meta">Valor Km rodado: ${R((ad1.total - materialTotal1)/(dist*2))}/km</div>`;
 
     // --- Tipo 2 — Prancha 1,25 km/L ---
     const cd2  = ((dist*2)/1.25)*diesel;
     const f50_2= (cd2*100)/50;
-    const base2= f50_2 + arrancada + pedagio + material;
+    const pedagio2 = pedagio * 2; // pedágio da prancha é por passagem — cobra ida e volta
+    const base2= f50_2 + arrancada + pedagio2 + material;
     const ad2  = aplicarAdicionais(base2, nfPct, commPct);
     document.getElementById('total2').innerHTML = R(ad2.total);
     document.getElementById('rows2').innerHTML =
       linha('Custo Diesel (ida+volta)', cd2) +
       linha('Frete a 50%', f50_2) +
       (arrancada>0 ? linha('Arrancada Prancha', arrancada) : '') +
-      (pedagio>0 ? linha('Pedágio', pedagio) : '') +
+      (pedagio2>0 ? linha('Pedágio (ida+volta)', pedagio2) : '') +
       (material>0 ? linha('Material', material) : '') +
       linhaSubtotal('Subtotal', base2) +
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad2.nfValor) : '') +
       (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad2.commValor) : '');
 
-    // --- Tipo 3 — >50km, 3 km/L ---
+    // --- Tipo 3 — Trechos >50km, 3 km/L (sem pedágio) ---
     const cd3  = ((dist*2)/3)*diesel;
-    const f50_3= ((cd3*100)/50)/12;
-    const com3 = f50_3 + material;
-    const base3= com3*12;
+    const frete3 = (cd3*100)/50;
+    const materialTotal3 = material*qtd3;
+    const base3= frete3 + materialTotal3;
     const ad3  = aplicarAdicionais(base3, nfPct, commPct);
     document.getElementById('total3').innerHTML = R(ad3.total);
     document.getElementById('rows3').innerHTML =
       linha('Custo Diesel (ida+volta)', cd3) +
-      linha('Frete a 50%', f50_3) +
-      (material>0 ? linha('Material', material) : '') +
+      linha('Frete a 50%', frete3) +
+      (material>0 ? linha(`Material (${qtd3} m³)`, materialTotal3) : '') +
       linhaSubtotal('Subtotal', base3) +
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad3.nfValor) : '') +
       (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad3.commValor) : '') +
-      `<div class="result-m3"><span>💰 Preço por M³ (12 m³)</span><span>${R(ad3.total/12)}/m³</span></div>`;
+      `<div class="result-m3"><span>💰 Preço por M³ (${qtd3} m³)</span><span>${R(ad3.total/qtd3)}/m³</span></div>`;
 
-    // --- Tipo 4 — 3 km/L ---
+    // --- Tipo 4 — Caminhão 3 km/L ---
     const cd4  = ((dist*2)/3)*diesel;
-    const f50_4= ((cd4*100)/50)/12;
-    const com4 = f50_4 + pedagio + material;
-    const base4= com4*12;
+    const frete4 = (cd4*100)/50;
+    const materialTotal4 = material*qtd4;
+    const base4= frete4 + pedagio + materialTotal4;
     const ad4  = aplicarAdicionais(base4, nfPct, commPct);
     document.getElementById('total4').innerHTML = R(ad4.total);
     document.getElementById('rows4').innerHTML =
       linha('Custo Diesel (ida+volta)', cd4) +
-      linha('Frete a 50%', f50_4) +
+      linha('Frete a 50%', frete4) +
       linha('Pedágio', pedagio) +
-      (material>0 ? linha('Material', material) : '') +
+      (material>0 ? linha(`Material (${qtd4} m³)`, materialTotal4) : '') +
       linhaSubtotal('Subtotal', base4) +
       (nfPct>0 ? linha(`NF (${nfPct}%)`, ad4.nfValor) : '') +
       (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad4.commValor) : '') +
-      `<div class="result-m3"><span>💰 Preço por M³ (12 m³)</span><span>${R(ad4.total/12)}/m³</span></div>` +
-      `<div class="result-meta">Valor Km rodado: ${R((ad4.total - material*12)/(dist*2))}/km</div>`;
+      `<div class="result-m3"><span>💰 Preço por M³ (${qtd4} m³)</span><span>${R(ad4.total/qtd4)}/m³</span></div>` +
+      `<div class="result-meta">Valor Km rodado: ${R((ad4.total - materialTotal4)/(dist*2))}/km</div>`;
+
+    // --- Tipo 5 — Bitrem 2 km/L ---
+    const cd5  = ((dist*2)/2)*diesel;
+    const frete5 = (cd5*100)/50;
+    const materialTotal5 = material*qtd5;
+    const base5= frete5 + pedagio + materialTotal5;
+    const ad5  = aplicarAdicionais(base5, nfPct, commPct);
+    document.getElementById('total5').innerHTML = R(ad5.total);
+    document.getElementById('rows5').innerHTML =
+      linha('Custo Diesel (ida+volta)', cd5) +
+      linha('Frete a 50%', frete5) +
+      linha('Pedágio', pedagio) +
+      (material>0 ? linha(`Material (${qtd5} m³)`, materialTotal5) : '') +
+      linhaSubtotal('Subtotal', base5) +
+      (nfPct>0 ? linha(`NF (${nfPct}%)`, ad5.nfValor) : '') +
+      (commPct>0 ? linha(`Comissão de Vendas (${commPct}%)`, ad5.commValor) : '') +
+      `<div class="result-m3"><span>💰 Preço por M³ (${qtd5} m³)</span><span>${R(ad5.total/qtd5)}/m³</span></div>` +
+      `<div class="result-meta">Valor Km rodado: ${R((ad5.total - materialTotal5)/(dist*2))}/km</div>`;
 
     const origemNome = jazidas[origemVal] || 'Origem';
     document.getElementById('distBadge').textContent = `${origemNome} → ${dist.toFixed(1)} km (ida)`;
 
-    const mostrarPrancha = (tipoOrcamento === 'prancha');
-    document.querySelector('.result-card.tipo-1').style.display = mostrarPrancha ? 'none' : '';
-    document.querySelector('.result-card.tipo-2').style.display = mostrarPrancha ? '' : 'none';
-    document.querySelector('.result-card.tipo-3').style.display = mostrarPrancha ? 'none' : '';
-    document.querySelector('.result-card.tipo-4').style.display = mostrarPrancha ? 'none' : '';
+    document.querySelector('.result-card.tipo-1').style.display = (tipoOrcamento === 'caminhao') ? '' : 'none';
+    document.querySelector('.result-card.tipo-3').style.display = (tipoOrcamento === 'caminhao') ? '' : 'none';
+    document.querySelector('.result-card.tipo-4').style.display = (tipoOrcamento === 'caminhao') ? '' : 'none';
+    document.querySelector('.result-card.tipo-2').style.display = (tipoOrcamento === 'prancha') ? '' : 'none';
+    document.querySelector('.result-card.tipo-5').style.display = (tipoOrcamento === 'bitrem') ? '' : 'none';
 
+    const jaVisivel = document.getElementById('resultados').className === '';
     document.getElementById('resultados').className = '';
     document.getElementById('fechamentoCard').style.display = 'block';
-    document.getElementById('resultados').scrollIntoView({ behavior:'smooth', block:'start' });
+    if (!jaVisivel) document.getElementById('resultados').scrollIntoView({ behavior:'smooth', block:'start' });
   }
 
   function enviarWhats() {
@@ -907,6 +993,7 @@
       2: 'Prancha (1,25 km/L)',
       3: 'Trechos > 50km (3 km/L)',
       4: 'Caminhão 3 km/L',
+      5: 'Bitrem (2 km/L)',
     };
     const cliente = document.getElementById('nomeCliente').value.trim();
     const origemVal = document.getElementById('origem').value;

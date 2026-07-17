@@ -50,57 +50,68 @@ App para orcamentos/
 - Jazida Eckert: -29.948550, -50.494830
 - São Joaquim: -29.837626, -50.556412
 
-## Os 4 tipos de orçamento (fórmulas atuais)
+## Os 5 tipos de orçamento (fórmulas atuais)
 
 ### Aplicação de NF e Comissão (todos os tipos)
 ```
 TotalFinal = Subtotal * (1 + NF%/100) * (1 + Comissão%/100)
 ```
 
+### Regra geral (Tipos 1, 3, 4 e 5 — todos exceto Prancha)
+Diesel e Pedágio são custo FIXO da viagem — não escalam com a quantidade transportada.
+Só o Material escala pela quantidade (m³) informada pelo usuário em cada card (campo "Quantidade a transportar").
+```
+Frete50%      = (CustoDiesel * 100/50)         ← total da viagem, não dividido por m³
+MaterialTotal = materialPorM3 * quantidade
+Subtotal      = Frete50% + pedágio (se houver) + MaterialTotal
+TotalFinal    = Subtotal * (1 + NF%) * (1 + Comissão%)
+PreçoPorM3    = TotalFinal / quantidade
+ValorKmRodado = (TotalFinal - MaterialTotal) / (dist*2)   ← R$/km, só nos Tipos 1, 4 e 5
+```
+
 ### Tipo 1 — Caminhão 2,5 km/L
 ```
-CustoDiesel  = (dist*2 / 2.5) * diesel
-Frete50%     = (CustoDiesel * 100/50) / 12
-Subtotal     = (Frete50% + pedágio + material) * 12
-TotalFinal   = Subtotal * (1 + NF%) * (1 + Comissão%)
-ValorKmRodado = (TotalFinal - material*12) / (dist*2)   ← R$/km exibido
+CustoDiesel = (dist*2 / 2.5) * diesel
 ```
+Campo "Quantidade a transportar (m³)" no card, padrão 12 m³.
 
 ### Tipo 2 — Prancha (1,25 km/L)
 ```
 CustoDiesel  = (dist*2 / 1.25) * diesel
-Frete50%     = (CustoDiesel * 100/50)   ← sem /12
+Frete50%     = (CustoDiesel * 100/50)
 Subtotal     = Frete50% + arrancadaPrancha + pedágio + material
 TotalFinal   = Subtotal * (1 + NF%) * (1 + Comissão%)
 ```
-Pedágio aqui é valor total da viagem (não R$/m³) — por isso não é multiplicado por 12. Quando o seletor "Prancha" está ativo, o campo já vem preenchido com R$ 33,00 (ver Histórico de decisões)
+Não tem campo de quantidade (m³) — carga de equipamento, não de material a granel. Pedágio aqui é valor total da viagem (não R$/m³). Quando o seletor "Prancha" está ativo, o campo já vem preenchido com R$ 33,00 (ver Histórico de decisões). O valor digitado é multiplicado por 2 internamente (ida+volta) — a praça de pedágio é cobrada nas duas passagens
 
 ### Tipo 3 — Trechos > 50km (3 km/L)
 ```
-CustoDiesel  = (dist*2 / 3) * diesel
-Frete50%     = (CustoDiesel * 100/50) / 12
-Subtotal     = (Frete50% + material) * 12
-TotalFinal   = Subtotal * (1 + NF%) * (1 + Comissão%)
+CustoDiesel = (dist*2 / 3) * diesel
 ```
+Sem pedágio. Campo "Quantidade a transportar (m³)" no card, padrão 12 m³.
 
 ### Tipo 4 — Caminhão 3 km/L
 ```
-CustoDiesel  = (dist*2 / 3) * diesel
-Frete50%     = (CustoDiesel * 100/50) / 12
-Subtotal     = (Frete50% + pedágio + material) * 12
-TotalFinal   = Subtotal * (1 + NF%) * (1 + Comissão%)
-ValorKmRodado = (TotalFinal - material*12) / (dist*2)   ← R$/km exibido
+CustoDiesel = (dist*2 / 3) * diesel
 ```
+Campo "Quantidade a transportar (m³)" no card, padrão 12 m³.
+
+### Tipo 5 — Bitrem (2 km/L)
+```
+CustoDiesel = (dist*2 / 2) * diesel
+```
+Campo "Quantidade a transportar (m³)" no card, padrão 30 m³ (faixa normal de uso: 20 a 40 m³, editável).
 
 ## Parâmetros configuráveis no app (valores padrão)
 | Parâmetro | Padrão | Onde aparece |
 |-----------|--------|--------------|
 | Preço Diesel (R$) | R$ 6,00 | Todos os tipos |
-| Pedágio (R$/M³ ou total, ver abaixo) | R$ 2,75 (Caminhão) / R$ 33,00 (Prancha) — **checkbox**, desmarcado por padrão | Tipos 1, 2, 4 quando ativado |
-| Material (R$) | R$ 26,70 | Tipos 1, 2, 3, 4 |
+| Pedágio (R$ - viagem, valor fixo) | R$ 3,30 (Caminhão) / R$ 33,00 (Prancha) / R$ 46,20 (Bitrem) — **checkbox**, desmarcado por padrão | Tipos 1, 2, 4, 5 quando ativado |
+| Material (R$/m³) | R$ 26,70 | Todos os tipos — multiplicado pela quantidade nos Tipos 1, 2*, 3, 4, 5 (*Prancha usa valor fixo, sem quantidade) |
 | Arrancada Prancha (R$) | R$ 700,00 | Tipo 2 (Prancha) apenas |
 | NF (%) | 12% | Todos os tipos — aplicado sobre o subtotal |
 | Comissão de Vendas (%) | 0% | Todos os tipos — aplicado após NF |
+| Quantidade a transportar (m³) | 12 (Tipos 1,3,4) / 30 (Tipo 5) | Campo individual em cada card — recalcula ao vivo (sem precisar clicar em Calcular de novo) |
 
 ## Arquivos do projeto (atualizado)
 ```
@@ -129,29 +140,35 @@ App para orcamentos/
 - **Ícone PWA**: logo MC Terraplenagem (fundo azul escuro #1a2744, letras MC brancas). App aparece como "MC Frete" na tela inicial do celular
 - **Preço do Material (saibro)**: atualizado de R$ 25,20 para R$ 26,70 (2026-07-17)
 - **Botão Compartilhar por card**: cada um dos 4 cards de orçamento tem botão próprio que monta um resumo (origem, distância, cliente, detalhamento e total daquele tipo) e abre o WhatsApp — independente do botão de Fechamento
-- **Seletor Caminhão / Prancha**: novo toggle antes da seção Destino. Ao selecionar "Prancha": mostra só o card Tipo 2, exibe o campo Arrancada Prancha e muda o valor de pedágio para R$ 33,00. Ao selecionar "Caminhão" (padrão): mostra só os cards Tipos 1, 3 e 4, oculta Arrancada Prancha e volta o pedágio para R$ 2,75. Objetivo: não poluir a tela com o card da Prancha quando não está em uso
+- **Seletor Caminhão / Prancha / Bitrem**: toggle de 3 opções antes da seção Destino. Cada opção mostra só os cards relevantes e ajusta o valor de Pedágio automaticamente. Ao selecionar "Prancha", também exibe o campo Arrancada Prancha (oculto nos outros dois). Objetivo: não poluir a tela com cards que não estão em uso
 - **Valor do pedágio da Prancha (R$ 33,00)**: baseado nos CRLVs dos veículos (cavalo VW 18.310 Titan = 2 eixos, semirreboque prancha = 3 eixos fixos → conjunto de 5 eixos) × tarifa básica R$ 6,60 da CCR ViaSul/RS (vigente desde 26/06/2026, categoria eixo simples/conjunto). É só um valor de referência por praça — se a rota tiver mais de uma praça de pedágio, o usuário deve ajustar manualmente
+- **Pedágio ida+volta**: no Tipo 2 (Prancha), o valor digitado no campo Pedágio é multiplicado por 2 internamente (a praça é paga na ida e na volta). Nos demais tipos (Caminhão e Bitrem), o valor padrão já representa o total ida+volta, então NÃO é multiplicado
+- **Pedágio Caminhão atualizado**: de R$ 2,75 para R$ 3,30 (2026-07-17)
+- **Bitrem adicionado (2026-07-17)**: novo Tipo 5, consumo ~2 km/L (Mercedes-Benz Actros 2651 LS 6x4). Cavalo 3 eixos (confirmado por ATPVe, configuração "6x4"). Assume-se, como nos caminhões, que o valor de pedágio já representa ida+volta — ajustar se o usuário informar o contrário
+- **Sub-seletor de configuração do Bitrem (2026-07-17)**: quando "Bitrem" está selecionado, aparece um segundo toggle — "7 eixos (completo)" ou "6 eixos (1 caçamba)" — porque o conjunto roda com as duas caçambas (7 eixos: 3 do cavalo + 4 dos reboques) ou só com a caçamba de trás (6 eixos: 3 do cavalo + 3 do reboque), perdendo um eixo. Cada opção ajusta o campo Pedágio automaticamente: R$ 46,20 (7 eixos) ou R$ 39,60 (6 eixos), sempre eixos × R$ 6,60 (tarifa básica CCR ViaSul/RS). O app lembra a última configuração escolhida ao alternar entre os tipos de orçamento
+- **Quantidade variável (m³) por card (2026-07-17)**: antes, todos os caminhões assumiam carga fixa de 12 m³ (multiplicava tudo — diesel, pedágio e material — por 12). Isso estava incorreto: diesel e pedágio são custo da viagem, não mudam com a quantidade transportada. Motivo da mudança: usuário às vezes carrega 8 m³ em vez de 12, ou o Bitrem pode levar de 20 a 40 m³, e só o custo do material deveria variar nesses casos. Agora cada card (Tipos 1, 3, 4 e 5) tem um campo próprio "Quantidade a transportar (m³)" que recalcula ao vivo (oninput), e a fórmula foi reestruturada: Frete a 50% e Pedágio são valores fixos da viagem, só o Material é multiplicado pela quantidade. A Prancha (Tipo 2) não tem esse campo — não usa o conceito de m³, é cobrança por arrancada + pedágio + material fixo
 
 ## Funcionalidades
 - Campo Nome do Cliente no topo
 - Após calcular, aparece seção de Fechamento: valor que o irmão fechou com o cliente + botão WhatsApp que envia resumo (data, cliente, origem, distância, valor)
 - Totais exibidos sem "/mês" — valor por carga
-- Pedágio como checkbox: mostra R$ 2,75 como lembrete, usuário marca apenas quando há pedágio na rota. Valor editável.
-- Preço por M³ exibido nos Tipos 1, 3 e 4 (Total ÷ 12 m³). Não aparece na Prancha.
+- Pedágio como checkbox: mostra o valor padrão do tipo selecionado como lembrete, usuário marca apenas quando há pedágio na rota. Valor editável.
+- Preço por M³ exibido nos Tipos 1, 3, 4 e 5 (Total ÷ quantidade informada). Não aparece na Prancha.
+- Campo "Quantidade a transportar (m³)" em cada card (Tipos 1, 3, 4, 5) — recalcula ao vivo sem precisar clicar em Calcular de novo.
 
 ## Estado atual
 - ✅ App funcionando no Vercel com link curto automático
 - ✅ Campo de distância (km de ida) sempre visível — link do Maps é opcional
 - ✅ Seleção de até 3 rotas alternativas quando link do Maps é colado
-- ✅ 4 tipos de orçamento com NF% e Comissão% em cascata
+- ✅ 5 tipos de orçamento com NF% e Comissão% em cascata
 - ✅ Parâmetros editáveis pelo usuário
-- ✅ Pedágio com checkbox (desmarcado por padrão, valor R$ 2,75 visível como lembrete)
-- ✅ Preço por M³ calculado automaticamente (Tipos 1, 3 e 4)
+- ✅ Pedágio com checkbox (desmarcado por padrão, valor visível como lembrete conforme o tipo selecionado)
+- ✅ Preço por M³ calculado automaticamente (Tipos 1, 3, 4 e 5), com quantidade editável por card
 - ✅ Campo Nome do Cliente + Fechamento com envio por WhatsApp
 - ✅ Ícone PWA configurado (manifest.json + apple-touch-icon) — requer upload do icon.png no GitHub
 - ✅ Botão "Compartilhar" em cada card de orçamento (envia resumo daquele tipo específico pelo WhatsApp)
-- ✅ Seletor Caminhão / Prancha — mostra só os cards relevantes e ajusta pedágio/Arrancada Prancha automaticamente
-- ⏳ Pendente: subir alterações para o GitHub (preço material R$ 26,70, botão Compartilhar, seletor Caminhão/Prancha) para redeploy no Vercel
+- ✅ Seletor Caminhão / Prancha / Bitrem — mostra só os cards relevantes e ajusta pedágio/Arrancada Prancha automaticamente
+- ⏳ Pendente: subir alterações para o GitHub (Bitrem, quantidade variável por card, pedágio caminhão R$ 3,30) para redeploy no Vercel
 
 ## Como fazer git push
 ```
