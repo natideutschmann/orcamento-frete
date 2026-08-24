@@ -95,7 +95,7 @@ Campo "Quantidade a transportar (m³)" no card, padrão 30 m³ (faixa normal de 
 | Parâmetro | Padrão | Onde aparece |
 |-----------|--------|--------------|
 | Preço Diesel (R$) | R$ 6,00 | Todos os tipos |
-| Pedágio (R$ - viagem, valor fixo) | R$ 3,30 (Caminhão) / R$ 33,00 (Prancha) / R$ 46,20 ou R$ 39,60 (Bitrem) — **checkbox**, desmarcado por padrão | Todos os tipos quando ativado |
+| Pedágio (R$ - viagem, valor fixo) | R$ 34,50 (Caminhão) / R$ 33,00 (Prancha) / R$ 82,80 (Bitrem 7 eixos completo) ou R$ 62,10 (Bitrem 6 eixos, 1 caçamba) — **checkbox**, desmarcado por padrão | Todos os tipos quando ativado |
 | Material (R$/m³) | R$ 26,70 | Tipos 1 e 5 (multiplicado pela quantidade). Campo oculto e não cobrado na Prancha |
 | Arrancada Prancha (R$) | R$ 700,00 | Tipo 2 (Prancha) apenas |
 | NF (%) | 12% | Todos os tipos — aplicado sobre o subtotal |
@@ -132,13 +132,19 @@ App para orcamentos/
 - **Seletor Caminhão / Prancha / Bitrem**: toggle de 3 opções antes da seção Destino. Cada opção mostra só os cards relevantes e ajusta o valor de Pedágio automaticamente. Ao selecionar "Prancha", também exibe o campo Arrancada Prancha (oculto nos outros dois). Objetivo: não poluir a tela com cards que não estão em uso
 - **Valor do pedágio da Prancha (R$ 33,00)**: baseado nos CRLVs dos veículos (cavalo VW 18.310 Titan = 2 eixos, semirreboque prancha = 3 eixos fixos → conjunto de 5 eixos) × tarifa básica R$ 6,60 da CCR ViaSul/RS (vigente desde 26/06/2026, categoria eixo simples/conjunto). É só um valor de referência por praça — se a rota tiver mais de uma praça de pedágio, o usuário deve ajustar manualmente
 - **Pedágio ida+volta**: no Tipo 2 (Prancha), o valor digitado no campo Pedágio é multiplicado por 2 internamente (a praça é paga na ida e na volta). Nos demais tipos (Caminhão e Bitrem), o valor padrão já representa o total ida+volta, então NÃO é multiplicado
-- **Pedágio Caminhão atualizado**: de R$ 2,75 para R$ 3,30 (2026-07-17)
+- **Pedágio Caminhão atualizado**: de R$ 2,75 para R$ 3,30 (2026-07-17), depois para R$ 34,50 com valores reais de praça (2026-08-24, ver decisão acima)
 - **Bitrem adicionado (2026-07-17)**: novo Tipo 5, consumo ~2 km/L (Mercedes-Benz Actros 2651 LS 6x4). Cavalo 3 eixos (confirmado por ATPVe, configuração "6x4"). Assume-se, como nos caminhões, que o valor de pedágio já representa ida+volta — ajustar se o usuário informar o contrário
-- **Sub-seletor de configuração do Bitrem (2026-07-17)**: quando "Bitrem" está selecionado, aparece um segundo toggle — "7 eixos (completo)" ou "6 eixos (1 caçamba)" — porque o conjunto roda com as duas caçambas (7 eixos: 3 do cavalo + 4 dos reboques) ou só com a caçamba de trás (6 eixos: 3 do cavalo + 3 do reboque), perdendo um eixo. Cada opção ajusta o campo Pedágio automaticamente: R$ 46,20 (7 eixos) ou R$ 39,60 (6 eixos), sempre eixos × R$ 6,60 (tarifa básica CCR ViaSul/RS). O app lembra a última configuração escolhida ao alternar entre os tipos de orçamento
+- **Sub-seletor de configuração do Bitrem (2026-07-17)**: quando "Bitrem" está selecionado, aparece um segundo toggle — "7 eixos (completo)" ou "6 eixos (1 caçamba)" — porque o conjunto roda com as duas caçambas (7 eixos: 3 do cavalo + 4 dos reboques) ou só com a caçamba de trás (6 eixos: 3 do cavalo + 3 do reboque), perdendo um eixo. Cada opção ajusta o campo Pedágio automaticamente. O app lembra a última configuração escolhida ao alternar entre os tipos de orçamento. Valores atualizados em 2026-08-24, ver decisão "Reajuste dos pedágios com valores reais de praça" abaixo
 - **Quantidade variável (m³) por card (2026-07-17)**: antes, todos os caminhões assumiam carga fixa de 12 m³ (multiplicava tudo — diesel, pedágio e material — por 12). Isso estava incorreto: diesel e pedágio são custo da viagem, não mudam com a quantidade transportada. Motivo da mudança: usuário às vezes carrega 8 m³ em vez de 12, ou o Bitrem pode levar de 20 a 40 m³, e só o custo do material deveria variar nesses casos. Agora cada card (Tipos 1 e 5) tem um campo próprio "Quantidade a transportar (m³)" que recalcula ao vivo (oninput), e a fórmula foi reestruturada: Frete a 50% e Pedágio são valores fixos da viagem, só o Material é multiplicado pela quantidade. A Prancha (Tipo 2) não tem esse campo — não usa o conceito de m³, é cobrança por arrancada + pedágio + material fixo
 - **Tipos 3 e 4 removidos (2026-07-17)**: "Trechos > 50km (3 km/L)" e "Caminhão 3 km/L" foram retirados da opção "Caminhão" a pedido do usuário — não eram mais usados. Restou só o Tipo 1 (Caminhão 2,5 km/L) nessa opção
 - **Pátio - Palmeira adicionado como origem (2026-07-17)**: é de onde a Prancha normalmente sai (coordenadas resolvidas a partir de um link do Google Maps enviado pelo usuário)
 - **Material removido da Prancha (2026-07-17)**: a Prancha transporta equipamento, não material a granel — o campo Material some do painel de Parâmetros quando "Prancha" está selecionada e deixa de entrar no cálculo/card desse tipo (evita confusão, já que não fazia sentido cobrar material numa carga que não é medida em m³)
+- **Reajuste dos pedágios com valores reais de praça (2026-08-24)**: os valores anteriores (R$ 3,30 Caminhão / R$ 46,20 e R$ 39,60 Bitrem) eram estimativas via eixos do CRLV × tarifa básica R$ 6,60. O usuário informou os valores reais pagos na praça da freeway (ida+volta), e a tarifa básica também subiu para R$ 6,90/eixo:
+  - **Caminhão**: R$ 34,50 total (ida vazio/truck erguido = 2 eixos × R$ 6,90 = R$ 13,80 + volta carregado/truck no chão = 3 eixos × R$ 6,90 = R$ 20,70). O truck perde 1 eixo (levanta) quando está vazio.
+  - **Bitrem 6 eixos (só último vagão)**: R$ 62,10 total, valor real informado pelo usuário (carregado = R$ 34,50 / vazio = R$ 27,60) — bate com 5 eixos carregado e 4 eixos vazio × R$ 6,90 (1 eixo do reboque levanta quando vazio).
+  - **Bitrem 7 eixos (completo, 2 caçambas)**: R$ 82,80 total — estimado (não há recibo real ainda) com 7 eixos carregado × R$ 6,90 = R$ 48,30 (ida) + 5 eixos vazio × R$ 6,90 = R$ 34,50 (volta), já que 2 eixos levantam quando o conjunto completo está vazio.
+  - O campo Pedágio no app continua mostrando só o valor total (checkbox "Incluir pedágio"), sem separar ida/volta na interface — a assimetria entre ida e volta só é usada para calcular o total padrão de cada configuração.
+  - Pendência: confirmar o valor real de praça do Bitrem 7 eixos completo quando houver um recibo, para substituir a estimativa.
 
 ## Funcionalidades
 - Campo Nome do Cliente no topo
@@ -160,7 +166,14 @@ App para orcamentos/
 - ✅ Ícone PWA configurado (manifest.json + apple-touch-icon) — requer upload do icon.png no GitHub
 - ✅ Botão "Compartilhar" em cada card de orçamento (envia resumo daquele tipo específico pelo WhatsApp)
 - ✅ Seletor Caminhão / Prancha / Bitrem — mostra só os cards relevantes e ajusta pedágio/Arrancada Prancha automaticamente
-- ⏳ Pendente: subir alterações para o GitHub (Pátio - Palmeira, remoção dos Tipos 3 e 4) para redeploy no Vercel
+- ✅ Sub-seletor do Bitrem (7 eixos completo / 6 eixos 1 caçamba) ajustando o pedágio automaticamente
+- ✅ Material removido do cálculo e do painel de Parâmetros quando "Prancha" está selecionada
+- ✅ Todas as alterações desta sessão já commitadas, enviadas ao GitHub (branch `main`) e confirmadas ao vivo em produção (Vercel) — nenhum push pendente no momento
+
+## Pendências conhecidas (não resolvidas nesta sessão)
+- Ícone PWA (manifest.json + apple-touch-icon): configurado no código, mas requer confirmar se o `icon.png` já foi de fato enviado ao GitHub (ver se aparece corretamente ao instalar o app no celular)
+- Valor do pedágio da Prancha (R$ 33,00) e do Bitrem 7 eixos completo (R$ 82,80, estimado) são referência de 1 praça — se a rota tiver mais de uma praça de pedágio, o usuário precisa ajustar manualmente o valor antes de calcular. O app não sinaliza automaticamente quantas praças existem na rota (decisão do usuário em 2026-08-24: não implementar essa detecção por enquanto)
+- Confirmar valor real de praça do Bitrem 7 eixos completo (hoje é estimativa via eixos × R$ 6,90) quando houver recibo
 
 ## Como fazer git push
 ```

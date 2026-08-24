@@ -423,10 +423,10 @@
             <div class="pedagio-check-row" id="pedagioCheckRow" onclick="togglePedagio()">
               <input type="checkbox" id="usarPedagio" onclick="event.stopPropagation(); togglePedagio()">
               <span class="pcheck-label">Incluir pedágio</span>
-              <span class="pcheck-val">R$ 3,30</span>
+              <span class="pcheck-val">R$ 34,50</span>
             </div>
             <div class="pedagio-input-wrap" id="pedagioInputWrap">
-              <input type="number" id="pPedagio" value="3.30" step="0.01" min="0" placeholder="Valor do pedágio">
+              <input type="number" id="pPedagio" value="34.50" step="0.01" min="0" placeholder="Valor do pedágio">
             </div>
           </div>
         </div>
@@ -736,8 +736,8 @@
   let tipoOrcamento = 'caminhao';
   let configBitrem = 'completo';
 
-  const pedagioPadrao = { caminhao: '3.30', prancha: '33.00' };
-  const pedagioBitrem = { completo: '46.20', '1cacamba': '39.60' };
+  const pedagioPadrao = { caminhao: '34.50', prancha: '33.00' };
+  const pedagioBitrem = { completo: '82.80', '1cacamba': '62.10' };
 
   function selecionarTipoOrcamento(tipo) {
     tipoOrcamento = tipo;
@@ -776,7 +776,7 @@
   }
 
   function atualizarValPedagio() {
-    const val = parseFloat(document.getElementById('pPedagio').value) || 3.30;
+    const val = parseFloat(document.getElementById('pPedagio').value) || 34.50;
     document.querySelector('.pcheck-val').textContent =
       'R$ ' + val.toFixed(2).replace('.', ',');
   }
