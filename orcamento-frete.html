@@ -558,7 +558,8 @@
   }
 
   function isUrlCurta(url) {
-    return /maps\.app\.goo\.gl|goo\.gl\/maps/.test(url);
+    // Inclui links longos do Maps sem coordenadas (ex.: maps?q=endereço) — o servidor busca as coordenadas
+    return /maps\.app\.goo\.gl|goo\.gl\/maps|google\.[a-z.]+\/maps|maps\.google\./.test(url);
   }
 
   function showStatus(tipo, msg) {
@@ -572,9 +573,13 @@
 
   async function resolverLinkCurto(shortUrl) {
     try {
-      const apiUrl = `/api/resolve?url=${encodeURIComponent(shortUrl)}`;
-      const resp = await fetch(apiUrl, { signal: AbortSignal.timeout(10000) });
+      const link = (shortUrl.match(/https?:\/\/\S+/) || [shortUrl])[0];
+      const apiUrl = `/api/resolve?url=${encodeURIComponent(link)}`;
+      const resp = await fetch(apiUrl, { signal: AbortSignal.timeout(15000) });
       const data = await resp.json();
+      if (typeof data?.lat === 'number' && typeof data?.lng === 'number') {
+        return { lat: data.lat, lng: data.lng };
+      }
       const finalUrl = data?.url || '';
       if (finalUrl) {
         const c = extrairCoordenadas(finalUrl);
@@ -683,7 +688,7 @@
     let coords = extrairCoordenadas(url);
 
     if (!coords && isUrlCurta(url)) {
-      showStatus('loading', 'Resolvendo link curto…');
+      showStatus('loading', 'Localizando o endereço do link…');
       coords = await resolverLinkCurto(url);
     }
 
