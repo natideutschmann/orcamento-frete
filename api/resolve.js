@@ -46,7 +46,11 @@ export default async function handler(req, res) {
 
     let coords = coordsNaUrl(finalUrl);
     if (!coords) {
-      const q = new URL(finalUrl).searchParams.get('q');
+      // Texto do local: "maps?q=<texto>" ou "maps/place/<texto>/..." ou "maps/search/<texto>/..."
+      const u = new URL(finalUrl);
+      const caminho = u.pathname.match(/\/maps\/(?:place|search)\/([^/]+)/);
+      const q = u.searchParams.get('q') ||
+        (caminho ? decodeURIComponent(caminho[1].replace(/\+/g, ' ')) : null);
       if (q) coords = await buscarCoordsPorTexto(q);
     }
 
