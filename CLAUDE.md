@@ -117,6 +117,7 @@ App para orcamentos/
 
 ## Histórico de decisões
 - **Link curto do WhatsApp**: resolvido via função serverless no Vercel (api/resolve.js) — proxies públicos (allorigins.win) foram testados mas o Google bloqueava
+- **Links do Maps sem coordenadas (2026-09-25)**: o Google passou a redirecionar links curtos (maps.app.goo.gl) para `google.com/maps?q=<endereço/plus code em texto>&ftid=...`, sem lat/lng na URL, e o app parou de traçar rotas. Correção: `api/resolve.js` segue o redirecionamento e, se a URL final não tiver coordenadas, busca o texto do `q=` em `google.com/search?tbm=map&hl=pt-BR&gl=br&q=...` e extrai o primeiro `[null,null,lat,lng]` da resposta. A API devolve `{url, lat, lng}` e o HTML usa lat/lng quando vierem. Links longos do Maps sem coordenadas também passam pela API. O app extrai a URL mesmo com texto antes dela (como no compartilhamento do WhatsApp), e a API só aceita domínios goo.gl/google. **Atenção:** esse endpoint `tbm=map` não é oficial; se parar de funcionar, a alternativa é geocodificar o texto (ex.: Nominatim) ou usar o campo de km manual
 - **Seleção de rota**: OSRM retorna até 3 alternativas, usuário escolhe qual usar (pedido do usuário — a primeira rota sugerida pode não ser a melhor)
 - **Km manual**: campo sempre visível abaixo das rotas — se preenchido, tem prioridade sobre a rota selecionada pelo OSRM
 - **Hospedagem**: GitHub Pages (backup) + Vercel (principal, necessário para a função de resolver links curtos)
@@ -169,10 +170,10 @@ App para orcamentos/
 - ✅ Seletor Caminhão / Prancha / Bitrem — mostra só os cards relevantes e ajusta pedágio/Arrancada Prancha automaticamente
 - ✅ Sub-seletor do Bitrem (7 eixos completo / 5 eixos 1 caçamba) ajustando o pedágio automaticamente
 - ✅ Material removido do cálculo e do painel de Parâmetros quando "Prancha" está selecionada
+- ✅ Correção dos links do Maps sem coordenadas publicada e testada em produção (2026-09-25, commit 2627c50)
 - ✅ Todas as alterações desta sessão já commitadas, enviadas ao GitHub (branch `main`) e confirmadas ao vivo em produção (Vercel) — nenhum push pendente no momento
 
 ## Pendências conhecidas (não resolvidas nesta sessão)
-- **BUG (diagnosticado em 2026-09-25, aguardando confirmação para corrigir)**: link curto do Maps (maps.app.goo.gl) não traça rota. Causa: o Google agora redireciona o link curto para `google.com/maps?q=<endereço ou plus code em texto>&ftid=...` — sem coordenadas na URL, então `extrairCoordenadas` falha. A própria página do Maps também não traz as coordenadas do local no HTML. Correção proposta (testada via curl): em `api/resolve.js`, quando a URL final não tiver coordenadas, pegar o texto do `q=` e consultar `https://www.google.com/search?tbm=map&hl=pt-BR&gl=br&q=<texto>` — a resposta traz `[null,null,lat,lng]` com as coordenadas corretas (endpoint não oficial, pode mudar). A API passaria a devolver `{url, lat, lng}` e o HTML usaria lat/lng quando vierem. Contorno enquanto isso: digitar o km de ida no campo manual.
 - Ícone PWA (manifest.json + apple-touch-icon): configurado no código, mas requer confirmar se o `icon.png` já foi de fato enviado ao GitHub (ver se aparece corretamente ao instalar o app no celular)
 - Valor do pedágio da Prancha (R$ 33,00) e do Bitrem 7 eixos completo (R$ 82,80, estimado) são referência de 1 praça — se a rota tiver mais de uma praça de pedágio, o usuário precisa ajustar manualmente o valor antes de calcular. O app não sinaliza automaticamente quantas praças existem na rota (decisão do usuário em 2026-08-24: não implementar essa detecção por enquanto)
 - Confirmar valor real de praça do Bitrem 7 eixos completo (hoje é estimativa via eixos × R$ 6,90) quando houver recibo
